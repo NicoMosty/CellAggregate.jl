@@ -4,12 +4,12 @@ include("init/sphere.jl")
 using ProgressMeter
 
 # Parameters for Simulations
-N = 27 #cells
-T_relax = 1000 #sec
-T = 3000 #sec
+N = 60 #cells
+T_relax = 5000 #sec
+T = 20000 #sec
 K = 1e10
 
-R_agg= 5e-6 #m
+R_agg= 7e-6 #m
 R_cell = 1.5e-6 #m
 r_max = 2.5 * R_cell
 s = 1.8 * R_cell
@@ -27,7 +27,7 @@ run(`cmd /c cls`)
 
 # Initialise cells
 println("____________INIZIALIZATING____________")
-sep=0.9
+sep=0.95
 # Plotting Initial Conditions
 println("      Generating a spheres")
 X = sphere(R_agg, N, R_cell,-sep*R_agg,0,0)
