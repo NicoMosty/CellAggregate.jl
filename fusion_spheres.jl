@@ -4,17 +4,17 @@ include("init/sphere.jl")
 using ProgressMeter
 
 # Parameters for Simulations
-N = 5 #cells
-T_relax = 500 #sec
-T = 1000 #sec
-K = 0.1
+N = 27 #cells
+T_relax = 1000 #sec
+T = 3000 #sec
+K = 1e10
 
-R_agg= 5 #µm
-R_cell = 1.5 #µm
+R_agg= 5e-6 #m
+R_cell = 1.5e-6 #m
 r_max = 2.5 * R_cell
 s = 1.8 * R_cell
 
-dt = 0.1
+dt = 0.5 #s
 
 run(`cmd /c cls`)
 println("_______FUSION OF CELL AGGREGATTES_______ \n")
@@ -31,40 +31,39 @@ sep=0.9
 # Plotting Initial Conditions
 println("      Generating a spheres")
 X = sphere(R_agg, N, R_cell,-sep*R_agg,0,0)
-println("      OK")
-Plot_Sphere(R_cell,X)
 
-# # Relaxing sphere
-# println("      Relaxing sphere")
-# p = Progress(size(0:dt:T_relax)[1],barlen=25)
-# for t in 0:dt:T_relax
-#     euler(X,N, dt, force, r_max, s, K)
-#     next!(p)
-# end
+# Relaxing sphere
+println("      Relaxing sphere")
+p = Progress(size(0:dt:T_relax)[1],barlen=25)
+for t in 0:dt:T_relax
+    euler(X,N, dt, force, r_max, s, K)
+    next!(p)
+end
 
-# # Generating both spheres
-# println("      Generating both spheres")
-# global sumX = Vector{Float64}[[2*sep*R_agg,0,0]]
-# p = Progress(N-1,barlen=25)
-# for n in 1:N-1
-#     global sumX = vcat(sumX,Vector{Float64}[[2*sep*R_agg,0,0]])
-#     next!(p)
-# end
-# Y = X + sumX
-# XY = vcat(X,Y)
+# Generating both spheres
+global sumX = Vector{Float64}[[2*sep*R_agg,0,0]]
+for n in 1:N-1
+    global sumX = vcat(sumX,Vector{Float64}[[2*sep*R_agg,0,0]])
+end
+Y = X + sumX
+XY = vcat(X,Y)
 
-# if MELTING == "yes"
-#     print("________________FUSING________________")
-#     print("Joining Spheres")
-#     # Calculation of the time evolution of the system
-#     p = Progress(size(0:dt:T)[1],barlen=25)
-#     for t in 0:dt:T
-#         euler(XY,2*N, dt, force, r_max, s, K)
-#         next!(p)
-#     end
-#     # Plotting Final Conditions
-#     Plot_Sphere(R_cell,XY)
-# else
-#     # Plotting Final Conditions
-#     Plot_Sphere(R_cell,XY)
-# end
+if MELTING == "yes"
+    Plot_Sphere(R_cell,XY,"Melt_Initial.vtk")
+
+    println("\n")
+    println("________________FUSING________________")
+    println("Joining Spheres")
+    # Calculation of the time evolution of the system
+    p = Progress(size(0:dt:T)[1],barlen=25)
+    for t in 0:dt:T
+        euler(XY,2*N, dt, force, r_max, s, K)
+        next!(p)
+    end
+    # Plotting Final Conditions
+    Plot_Sphere(R_cell,XY,"Melt_Final.vtk")
+else
+    # Plotting Final Conditions
+    println("      Generating both spheres")
+    Plot_Sphere(R_cell,XY,"NoMelt_Initial_Final.vtk")
+end

@@ -4,9 +4,9 @@ using ProgressMeter
 pv = pyimport("pyvista")
 
 function coord_sph(R_agg, x_o, y_o, z_o)
-    theta = rand(0:1e6:pi)
-    phi = rand(0:1e6:2*pi)
-    radius = rand(0:1e6:R_agg)
+    theta = rand(0:0.1:pi)
+    phi = rand(0:0.1:2*pi)
+    radius = rand(0:1e-7:R_agg)
 
     x = radius*sin(theta)*cos(phi) + x_o
     y = radius*sin(theta)*sin(phi) + y_o
@@ -40,7 +40,7 @@ function sphere(R_agg, N, r_cell, x_o, y_o, z_o)
     return X
 end
 
-function Plot_Sphere(r,X)
+function Plot_Sphere(r,X,saved)
     global j = 0
     for i in X
         if j == 0
@@ -51,8 +51,5 @@ function Plot_Sphere(r,X)
         end
         global j +=  1
     end
-    merged.plot()
+    merged.save(saved)
 end
-
-A = sphere(5, 5, 1, 0, 0, 0)
-println(A)
