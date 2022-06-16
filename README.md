@@ -11,6 +11,6 @@ PENDIENTE
 For a better visualization, its recommended the use of the [ParaView](https://www.paraview.org/) program of the images in the **data** folder. The files are in the **.vtk** format.
 
 #### Initial Conditions
-![initial](Initial.png)
+![initial](data/markdown/Initial.png)
 #### Final Conditions
-![final](Final.png)
+![final](data/markdown/Final.png)
