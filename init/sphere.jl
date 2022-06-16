@@ -1,8 +1,9 @@
 using LinearAlgebra
 using PyCall
-using ProgressMeter
 pv = pyimport("pyvista")
+using ProgressMeter
 
+# Generating coordenates of a Cell
 function coord_sph(R_agg, x_o, y_o, z_o)
     theta = rand(0:0.1:pi)
     phi = rand(0:0.1:2*pi)
@@ -15,6 +16,7 @@ function coord_sph(R_agg, x_o, y_o, z_o)
     return [vcat(x,y,z)]
 end
 
+# Adding circles into a Cell Aggregate
 function sphere(R_agg, N, r_cell, x_o, y_o, z_o)
     global X = coord_sph(R_agg, x_o, y_o, z_o)
     p = Progress(N-1,barlen=25)
@@ -40,8 +42,10 @@ function sphere(R_agg, N, r_cell, x_o, y_o, z_o)
     return X
 end
 
+# Plotting Cell Aggregates
 function Plot_Sphere(r,X,saved)
     global j = 0
+    p = Progress(size(X)[1],barlen=25)
     for i in X
         if j == 0
             global merged = pv.Sphere(radius = r, center=i)  
@@ -50,6 +54,7 @@ function Plot_Sphere(r,X,saved)
             global merged =merged.merge([sphere])
         end
         global j +=  1
+        next!(p)
     end
     merged.save(saved)
 end
