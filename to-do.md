@@ -19,3 +19,10 @@
 
 # Parallelization the Loop
 * Adding CUDA in loop in /init/forces.jl
+
+# Data Stricture
+* Generating data structure for better algorithm
+  * Cell
+    * Id:CellAgggregate
+    * Id
+    * Position
