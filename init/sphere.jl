@@ -2,6 +2,7 @@ using LinearAlgebra
 using PyCall
 pv = pyimport("pyvista")
 using ProgressMeter
+using DelimitedFiles
 
 # Generating coordenates of a Cell
 function coord_sph(R_agg, x_o, y_o, z_o)
@@ -40,6 +41,35 @@ function sphere(R_agg, N, r_cell, x_o, y_o, z_o)
         next!(p)
     end
     return X
+end
+
+># HCP -> Hexagonal Close Packing
+function Sphere_HCP(R_agg, x_o, y_o, z_o)
+    """
+    Parameters
+    r = radius of 
+    """
+    k = vcat(repeat(Array{Int64}((1:2R_agg)' .* ones(2R_agg)), 2R_agg)...) .- 1
+    j = vcat(repeat(1:2R_agg, inner=(2R_agg,2R_agg))...) .- 1
+    i = vcat(repeat(1:2R_agg, outer=(2R_agg,2R_agg))...) .- 1
+
+    x = 2 * i + (j + k) .% 2
+    y = sqrt(3) * (j + 1/3 * (k .% 2))
+    z = 2 * sqrt(6) / 3 * k
+
+    # Moving the center of the aggregate with the mass_center
+    x = x .- sum(x)/size(x)[1] .+ x_o
+    y = y .- sum(y)/size(y)[1] .+ y_o
+    z = z .- sum(z)/size(z)[1] .+ z_o
+
+    HCP = Array{Float64}[]
+    for i in 1:size(k)[1]
+        if  norm([vcat(x[i],y[i],z[i])][1]) < R_agg
+            HCP = vcat(HCP,[vcat(x[i],y[i],z[i])])
+        end
+    end
+
+    return HCP
 end
 
 # Plotting Cell Aggregates
