@@ -27,18 +27,10 @@ run(`cmd /c cls`)
 
 # Initialise cells
 println("____________INIZIALIZATING____________")
-sep=0.95
+sep=1
 # Plotting Initial Conditions
 println("      Generating a spheres")
-X = sphere(R_agg, N, R_cell,-sep*R_agg,0,0)
-
-# Relaxing sphere
-println("      Relaxing sphere")
-p = Progress(size(0:dt:T_relax)[1],barlen=25)
-for t in 0:dt:T_relax
-    euler(X,N, dt, force, r_max, s, K)
-    next!(p)
-end
+X = Sphere_HCP(R_agg, N, R_cell,-sep*R_agg,0,0)
 
 # Generating both spheres
 global sumX = Vector{Float64}[[2*sep*R_agg,0,0]]
