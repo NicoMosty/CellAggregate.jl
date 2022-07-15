@@ -1,10 +1,6 @@
-using LinearAlgebra
-using ProgressMeter
-using DelimitedFiles
-using GLMakie
-GLMakie.activate!()
-
-CairoMakie.activate!(type = "svg")
+using LinearAlgebra: norm
+using ProgressMeter: Progress
+using DataFrames
 
 # Generating coordenates of a Cell
 function coord_sph(R_agg, x_o, y_o, z_o)
@@ -46,7 +42,7 @@ function sphere(R_agg, N, r_cell, x_o, y_o, z_o)
 end
 
 ># HCP -> Hexagonal Close Packing
-function Sphere_HCP(R_agg, x_o, y_o, z_o, r = 2)
+function Sphere_HCP(R_agg, R_Cell, x_o, y_o, z_o, digit = 2)
     """
     Parameters
     R_agg = radius of 
@@ -59,76 +55,21 @@ function Sphere_HCP(R_agg, x_o, y_o, z_o, r = 2)
     y = sqrt(3) * (j + 1/3 * (k .% 2))
     z = 2 * sqrt(6) / 3 * k
 
-    # Center of Aggregatess
-    x_c = sum(x)/size(x)[1]
-    y_c = sum(y)/size(y)[1]
-    z_c = sum(z)/size(z)[1]
-
-
     # Moving the center of the aggregate with the mass_center
-    x = round.(x .- x_c .+ x_o; digits = r)
-    y = round.(y .- y_c .+ y_o; digits = r)
-    z = round.(z .- z_c .+ z_o; digits = r)
+    x = round.(x .- sum(x)/size(x)[1] .+ x_o; digits = digit)
+    y = round.(y .- sum(y)/size(y)[1] .+ y_o; digits = digit)
+    z = round.(z .- sum(z)/size(z)[1] .+ z_o; digits = digit)
 
-    HCP = Array{Float32}[]
-    for i in 1:size(x)[1]
-        if  norm(vcat(x[i],y[i],z[i])-vcat(x_o,y_o,z_o)) < R_agg
-            HCP = vcat(HCP,[vcat(x[i],y[i],z[i])])
+    dist = []
+    i=1; while i <= length(x)
+        if norm(vcat(x[i],y[i],z[i])-vcat(x_o,y_o,z_o)) > R_agg
+            splice!(x, i)
+            splice!(y, i)
+            splice!(z, i)
+        else 
+            push!(dist, norm(vcat(x[i],y[i],z[i])-vcat(x_o,y_o,z_o)))
+            i += 1
         end
     end
-    return HCP
-end
-
-# Plotting Cell Aggregates
-function Plot_Sphere_Python(r,X,R_agg,saved)
-    
-    x_c = sum(map(x->x[1], X))/size(map(x->x[1], X))[1]
-    y_c = sum(map(x->x[2], X))/size(map(x->x[2], X))[1]
-    z_c = sum(map(x->x[3], X))/size(map(x->x[3], X))[1]
-    X_c = [x_c, y_c, z_c]
-
-    global j = 0
-    p = Progress(size(X)[1],barlen=25)
-    for i in X
-        if j == 0
-            global merged = pv.Sphere(radius = r, center=i)  
-        else
-            if norm(i - X_c) > R_agg*0.85
-                sphere = pv.Sphere(radius = r, center=i)
-                global merged =merged.merge([sphere])
-            elseif  R_agg < 12
-                sphere = pv.Sphere(radius = r, center=i)
-                global merged =merged.merge([sphere])
-            end 
-        end
-        global j +=  1
-        next!(p)
-    end
-    merged.save(saved)
-end
-
-
-# Plotting Cell Aggregates
-function Plot_Sphere(r,X,saved)
-    I = map(x->x[1], X)
-    J = map(x->x[2], X)
-    K = map(x->x[3], X)
-
-    f = Figure()
-
-    azimuths = [0, 0.2pi, 0.4pi]
-    elevations = [-0.2pi, 0, 0.2pi]
-
-    for (i, elevation) in enumerate(elevations)
-        for (j, azimuth) in enumerate(azimuths)
-            ax = Axis3(f[i, j], aspect = :data,
-            title = "elevation = $(round(elevation/pi, digits = 2))π\nazimuth = $(round(azimuth/pi, digits = 2))π",
-            elevation = elevation, azimuth = azimuth,
-            protrusions = (0, 0, 0, 40))
-
-            hidedecorations!(ax)
-            meshscatter!(I, J, K, markersize = r, color = :white )
-        end
-    end
-    save(saved, f)
+    return DataFrame(X=x, Y=y, Z=z, Norm=round.(dist; digits = 3), R_Cell=R_Cell)
 end

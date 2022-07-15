@@ -1,4 +1,4 @@
-using LinearAlgebra
+using LinearAlgebra: norm
 
 function force(X, N, r_max, s, K)
     # Initialise displacement array
