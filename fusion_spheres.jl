@@ -15,7 +15,7 @@ r_max = 2.5 * R_cell
 s = 1.8 * R_cell
 
 dt = 0.5 #s
-t_knn = 2
+t_knn = 10
 
 run(`cmd /c cls`)
 println("_______FUSION OF CELL AGGREGATTES_______ \n")
