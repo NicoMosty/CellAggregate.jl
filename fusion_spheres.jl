@@ -15,6 +15,7 @@ r_max = 2.5 * R_cell
 s = 1.8 * R_cell
 
 dt = 0.5 #s
+t_knn = 2
 
 run(`cmd /c cls`)
 println("_______FUSION OF CELL AGGREGATTES_______ \n")
@@ -51,7 +52,7 @@ if MELTING == "yes"
     # Calculation of the time evolution of the system
     p = Progress(size(0:dt:T)[1],barlen=25)
     for t in 0:dt:T
-        euler(XY,2*N, dt, force, r_max, s, K)
+        euler(XY, dt, t, t_knn, force, r_max, s, K)
         next!(p)
     end
     # Plotting Final Conditions
