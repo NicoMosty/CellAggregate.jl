@@ -20,6 +20,7 @@ t_knn = 10
 run(`cmd /c cls`)
 println("_______FUSION OF CELL AGGREGATTES_______ \n")
 println("Do you want to simulate aggregate melting? \n(Write 'yes' if it requires spheroid fusion [Default: No])")
+
 MELTING = readline()
 if MELTING == ""
     MELTING = "no"
