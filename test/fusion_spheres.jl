@@ -1,6 +1,6 @@
-include("init/forces.jl")
-include("init/solvers.jl")
-include("init/sphere.jl")
+include("../init/forces.jl")
+include("../init/solvers.jl")
+include("../init/sphere.jl")
 using ProgressMeter
 
 # Parameters for Simulations
@@ -44,8 +44,8 @@ XY = vcat(X,Y)
 
 if MELTING == "yes"
     println("      Generating both spheres")
-    mkpath("data/Melt/N($N)R_agg($R_agg)")
-    Plot_Sphere(R_cell,XY,"data/Melt/N($N)R_agg($R_agg)/T($T)K($K)_Initial.vtk")
+    mkpath("../data/Melt/N($N)R_agg($R_agg)")
+    Plot_Sphere(R_cell,XY,"../data/Melt/N($N)R_agg($R_agg)/T($T)K($K)_Initial.vtk")
 
     println("\n")
     println("________________FUSING________________")
@@ -57,10 +57,10 @@ if MELTING == "yes"
         next!(p)
     end
     # Plotting Final Conditions
-    Plot_Sphere(R_cell,XY,"data/Melt/N($N)R_agg($R_agg)/T($T)K($K)__Final.vtk")
+    Plot_Sphere(R_cell,XY,"../data/Melt/N($N)R_agg($R_agg)/T($T)K($K)__Final.vtk")
 else
     # Plotting Final Conditions
     println("      Generating both spheres")
-    mkpath("data/NoMelt/N($N)R_agg($R_agg)")
-    Plot_Sphere(R_cell,XY,"data/NoMelt/N($N)R_agg($R_agg)/T_relax($T_relax)K($K)_Initial_Final.vtk")
+    mkpath("../data/NoMelt/N($N)R_agg($R_agg)")
+    Plot_Sphere(R_cell,XY,"../data/NoMelt/N($N)R_agg($R_agg)/T_relax($T_relax)K($K)_Initial_Final.vtk")
 end
