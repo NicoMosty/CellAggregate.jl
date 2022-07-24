@@ -71,5 +71,5 @@ function Sphere_HCP(R_agg, R_Cell, x_o, y_o, z_o, digit = 2)
             i += 1
         end
     end
-    return DataFrame(X=x, Y=y, Z=z, Norm=round.(dist; digits = 3), R_Cell=R_Cell)
+    return [x y z round.(dist; digits = 3) fill(R_Cell, length(x))]
 end

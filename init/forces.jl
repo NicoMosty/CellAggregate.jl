@@ -1,4 +1,5 @@
 using LinearAlgebra: norm
+using NearestNeighbors
 
 function force(X,kdtree,  r_max, s, K )
     # Initialise displacement array
