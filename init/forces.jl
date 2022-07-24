@@ -13,6 +13,7 @@ function force(X,kdtree,  r_max, s, K )
         # Initialise variables
         global Xi = X[i,1:3]
         for j in idxs
+        # for j in X[j,1:3]
             if i != j
                 global r = Xi - X[j,1:3]
                 global dist = norm(r)
