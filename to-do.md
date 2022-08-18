@@ -1,5 +1,4 @@
 # Performance
-* Add Gabriel Graph
 * Find the parameters for minimize the error for find the repulsion-adhesion parameters
 
 # Parallelization the Loop
