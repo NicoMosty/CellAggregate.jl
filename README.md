@@ -1,11 +1,11 @@
 # Centre Model for Fusing Cell Aggregates
 
 A julia implementation of some of the parallel agent based
-models in [yalla](https://github.com/germannp/yalla).
+using CUDA for paralleling.
 
 ## Prerequisites
 
-PENDIENTE
+PENDING
 
 ## Visualization
 For a better visualization, its recommended the use of the [ParaView](https://www.paraview.org/) program of the images in the **data** folder. The files are in the **.vtk** format.
