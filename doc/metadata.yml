@@ -1,0 +1,23 @@
+---
+title: "Evaluación de topologíás de agregados celulares a partir de un modelo de *Off-Lattice* para bioimpresión de tejidos \n\n (Draft)"
+author: Nicolas Puentes Urrego
+date: \today
+bibliography: export.bib
+
+geometry: 
+- top=10mm
+- left=15mm
+- heightrounded
+
+documentclass: article
+output: pdf_document
+header-includes:
+   - \usepackage{caption}
+   - \usepackage{amsmath}
+   - \captionsetup[figure]{font=scriptsize}
+
+fontsize: 11pt
+papersize: letter
+classoption:
+- twocolumn
+---
