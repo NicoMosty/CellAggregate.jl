@@ -1,5 +1,4 @@
-# CellAggregate.jl (TESTING)
-
+# CellAggregate.jl
 A julia implementation of some of the parallel agent based
 using CUDA for paralleling for Centre Model for Fusing Cell Aggregates.
 
