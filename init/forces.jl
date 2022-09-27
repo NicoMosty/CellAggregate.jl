@@ -44,7 +44,8 @@ function forces_cu()
     r = r ./ dist
 
     # dX[i,:] +=  r/dist * F
-    F = -K.*((dist .- r_max).^2) .* (dist .- s) .* r
+    F = - K.*((dist .- r_max).^2) .* (dist .- s) .* r
+    # <----------------------------------------------- THIS
 
     # Deleting Forces greater than R_Max
     F[dist .>  r_max] .= 0
