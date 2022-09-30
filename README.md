@@ -5,7 +5,7 @@ using CUDA for paralleling for Centre Model for Fusing Cell Aggregates.
 ## Prerequisites
 
 Install the next packages in julia
-```
+``` julia
 julia $ ]
     add CUDA
     add ProgressMeter
