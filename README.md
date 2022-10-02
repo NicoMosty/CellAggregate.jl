@@ -4,10 +4,19 @@ using CUDA for paralleling for Centre Model for Fusing Cell Aggregates.
 
 ## Prerequisites
 
-PENDING
+Install the next packages in julia
+``` julia
+julia $ ]
+    add CUDA
+    add ProgressMeter
+    add DelimitedFiles
+    add Plots
+    add Images
+    add FileIO
+```
 
 ## Visualization
-For a better visualization, its recommended the use of the [ParaView](https://www.paraview.org/) program of the images in the **data** folder. The files are in the **.vtk** format.
+For a better visualization, its recommended the use of the [ParaView](https://www.paraview.org/) or [VMD](https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD) program of the images in the **data** folder or **test** folder. The files are in the **.xyz** format.
 
 #### Initial Conditions
 ![initial](data/markdown/initial.png)
