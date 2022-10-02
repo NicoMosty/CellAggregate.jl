@@ -29,7 +29,7 @@ function force(X,kdtree,  r_max, s, K )
     return dX
 end
 
-function forces_cu()
+function forces_cu(r_max, s, K)
     # Definig Variables for calculing dX
     global X; global dX; global idx
 
