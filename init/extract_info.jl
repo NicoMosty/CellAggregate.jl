@@ -86,46 +86,6 @@ end
 ------------------     FUNCTIONS FOR CALCULATED AGGREGATES      -------------
 -----------------------------------------------------------------------------
 =#
-function compare(k, corr_angle)
-    # Calling Data from files
-    id = Float64.(readdlm("T_150000/rmax_3.5_s_1.9/k_$(k)/Test_Initial.xyz")[3:end,1])
-    X_i = Float64.(readdlm("T_150000/rmax_3.5_s_1.9/k_$(k)/Test_Initial.xyz")[3:end,2:4])
-    X_f = Float64.(readdlm("T_150000/rmax_3.5_s_1.9/k_$(k)/Test_Final.xyz")[3:end,2:4])
-
-    X_i = hcat(X_i[:,1],X_i[:,3])
-    X_f= hcat(X_f[:,1],X_f[:,3]);
-
-    # Finding the center of mass
-    X_i_center = sum(X_i, dims=1) ./ size(X_i)[1]
-    X_f_center = sum(X_f, dims=1) ./ size(X_f)[1]
-
-    # Moving two aggregates to the center of mass
-    X_i = X_i - repeat(X_i_center, size(X_i)[1])
-    X_f = X_f - repeat(X_f_center, size(X_f)[1])
-
-    # Cilindrical Coordinates
-    r_i = sqrt.(sum(X_i .^ 2, dims=2))
-    θ_i = mod.(180/pi .* (atan.(X_i[:,2] ./ X_i[:,1]) + pi*[X_i[:,2] .< 0][1]) .+ 90, 360)
-    X_i_cil = hcat(θ_i,r_i)
-
-    r_f = sqrt.(sum(X_f .^ 2, dims=2))
-    θ_f = mod.(180/pi .* (atan.(X_f[:,2] ./ X_f[:,1]) + pi*[X_f[:,2] .< 0][1]) .+ corr_angle, 360)
-    X_f_cil = hcat(θ_f,r_f)
-
-    return X_i_cil, X_f_cil
-end
-
-function plot_compare(X_i, X_f)
-    scatter(
-        [X_i[:,1], X_f[:,1]], 
-        [X_i[:,2], X_f[:,2]], 
-        labels=["Init" "Final"], 
-        shape=[:+ :o :utri], 
-        markersize=3,
-        xticks = 0:45:360
-    )
-end
-
 function corr_data(X_f)
     # Finding the center of mass
     X_center = sum(X_f, dims=1)./ size(X_f[:,1])
@@ -150,4 +110,44 @@ function corr_data(X_f)
             sin(correct[1]) cos(correct[1]) 0; 0 0 1 ]
 
     return (Mat_y * Mat_z * X_f')'
+end
+function compare(k)
+    # Calling Data from files
+    id = Float64.(readdlm("T_150000/rmax_3.5_s_1.9/k_$(k)/Test_Initial.xyz")[3:end,1])
+    X_i = Float64.(readdlm("T_150000/rmax_3.5_s_1.9/k_$(k)/Test_Initial.xyz")[3:end,2:4])
+    X_f = Float64.(readdlm("T_150000/rmax_3.5_s_1.9/k_$(k)/Test_Final.xyz")[3:end,2:4])
+    X_f = corr_data(X_f)
+    
+    X_i = hcat(X_i[:,1],X_i[:,3])
+    X_f= hcat(X_f[:,1],X_f[:,3]);
+
+    # Finding the center of mass
+    X_i_center = sum(X_i, dims=1) ./ size(X_i)[1]
+    X_f_center = sum(X_f, dims=1) ./ size(X_f)[1]
+
+    # Moving two aggregates to the center of mass
+    X_i = X_i - repeat(X_i_center, size(X_i)[1])
+    X_f = X_f - repeat(X_f_center, size(X_f)[1])
+
+    # Cilindrical Coordinates
+    r_i = sqrt.(sum(X_i .^ 2, dims=2))
+    θ_i = mod.(180/pi .* (atan.(X_i[:,2] ./ X_i[:,1]) + pi*[X_i[:,2] .< 0][1]) .+ 90, 360)
+    X_i_cil = hcat(θ_i,r_i)
+
+    r_f = sqrt.(sum(X_f .^ 2, dims=2))
+    θ_f = mod.(180/pi .* (atan.(X_f[:,2] ./ X_f[:,1]) + pi*[X_f[:,2] .< 0][1]) .+ 90, 360)
+    X_f_cil = hcat(θ_f,r_f)
+
+    return X_i_cil, X_f_cil
+end
+
+function plot_compare(X_i, X_f)
+    scatter(
+        [X_i[:,1], X_f[:,1]], 
+        [X_i[:,2], X_f[:,2]], 
+        labels=["Init" "Final"], 
+        shape=[:+ :o :utri], 
+        markersize=3,
+        xticks = 0:45:360
+    )
 end
