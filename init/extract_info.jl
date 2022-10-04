@@ -125,3 +125,29 @@ function plot_compare(X_i, X_f)
         xticks = 0:45:360
     )
 end
+
+function corr_data(X_f)
+    # Finding the center of mass
+    X_center = sum(X_f, dims=1)./ size(X_f[:,1])
+
+    # # Moving two aggregates to the center of mass
+    X_f = X_f - repeat(X_center ,size(X_f)[1])
+
+    # Cilindrical Coordinates
+    X_f_cil = zeros(size(X_f)[1],3)
+    X_f_cil[:,1] = sqrt.(sum(X_f .^ 2, dims=2))
+    X_f_cil[:,2:3]  = mod.(180/pi .* (atan.(X_f[:,2:3] ./ X_f[:,1]) + pi*[X_f[:,2:3] .< 0][1]) .+ 90, 360)
+
+    # Correction of angle with the max radius on the agregate
+    correct = X_f_cil[findmax(X_f_cil[:,1])[2],:][2:3] .* (pi/180)
+    correct = [-pi/2 pi/2]' - correct
+
+    # Using the matrix for rotate the aggregeate
+    Mat_y = [cos(correct[2]) 0 sin(correct[2]); 0 1 0;
+            -sin(correct[2]) 0 cos(correct[2]) ]
+
+    Mat_z = [cos(correct[1]) -sin(correct[1]) 0; 
+            sin(correct[1]) cos(correct[1]) 0; 0 0 1 ]
+
+    return (Mat_y * Mat_z * X_f')'
+end
