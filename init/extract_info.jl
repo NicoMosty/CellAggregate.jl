@@ -100,14 +100,15 @@ function corr_data(X_f)
 
     # Correction of angle with the max radius on the agregate
     correct = X_f_cil[findmax(X_f_cil[:,1])[2],:][2:3] .* (pi/180)
-    correct = [-pi/2 pi/2]' - correct
+    correct = map(x -> x > 180 ? x - 180 : x, correct)
+    correct = [-pi/2 -pi/2]' + correct
 
     # Using the matrix for rotate the aggregeate
-    Mat_y = [cos(correct[2]) 0 sin(correct[2]); 0 1 0;
-            -sin(correct[2]) 0 cos(correct[2]) ]
+    Mat_y = [cos(correct[1]) 0 sin(correct[1]); 0 1 0;
+            -sin(correct[1]) 0 cos(correct[1]) ]
 
-    Mat_z = [cos(correct[1]) -sin(correct[1]) 0; 
-            sin(correct[1]) cos(correct[1]) 0; 0 0 1 ]
+    Mat_z = [cos(correct[2]) -sin(correct[2]) 0; 
+            sin(correct[2]) cos(correct[2]) 0; 0 0 1 ]
 
     return (Mat_y * Mat_z * X_f')'
 end
