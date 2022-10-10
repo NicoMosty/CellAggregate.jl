@@ -1,0 +1,21 @@
+---
+title: "Title"
+# subtitle: "(Draft)"
+author: Author
+date: \today
+keywords: [Markdown, Example]
+bibliography: export.bib
+
+geometry: 
+- top=20mm
+- left=20mm
+- heightrounded
+
+documentclass: article
+output: pdf_document
+fontsize: 11pt
+papersize: letter
+
+classoption:
+- twocolumn
+---
