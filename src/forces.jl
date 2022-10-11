@@ -90,7 +90,11 @@ function diff_forces(n_knn, t_f, r_max, s, K)
     end
 end
 
-function fusion(X, t_f, r_max, s, K)
+function fusion(PATH,t_f, r_max, s, K)
+    
+    # Definig Variables for calculing the fusion
+    # Calling global X 
+    global X
 
     # Finding External Cells on the Aggregate
     X = Matrix(X)
@@ -111,7 +115,7 @@ function fusion(X, t_f, r_max, s, K)
     X_2[1:size(X,1),1] = X_2[1:size(X,1),1] .- (Size)
     X_2[size(X,1):end,1] = X_2[size(X,1):end,1] .+ Size
 
-    open("Test_Initial.xyz"; write=true) do f
+    open(PATH*"/Test_Initial.xyz"; write=true) do f
         write(f, "$(size(X_2, 1))\n")
         write(f, "Initial Data ($(R_agg))\n")
         writedlm(f,hcat(X_f_2, X_2), ' ')
@@ -122,5 +126,12 @@ function fusion(X, t_f, r_max, s, K)
     # Running Forces Function
     diff_forces(n_knn, t_f, r_max, s, K)
     
+    # Saving final Data
+    X = Matrix(X)
+    open(PATH*"/Test_Final.xyz"; write=true) do f
+        write(f, "$(size(X, 1))\n")
+        write(f, "Initial Data ($(R_agg))\n")
+        writedlm(f,hcat(X_f_2, X), ' ')
+    end
     return 
 end
