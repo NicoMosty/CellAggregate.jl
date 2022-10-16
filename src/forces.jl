@@ -53,7 +53,7 @@ function forces_cu(r_max, s, K)
     synchronize()
 end
 
-function diff_forces(n_knn, t_f, r_max, s, K)
+function diff_forces(PATH, n_text, n_knn, t_f, r_max, s, K)
     # Definig Variables for calculing initial variables
     global X
 
@@ -72,6 +72,15 @@ function diff_forces(n_knn, t_f, r_max, s, K)
     p = Progress(Int(t_f/dt),barlen=25)
     for i in 0:Int(t_f/dt)
 
+        if mod(i, Int(t_f/n_text/dt)) == 0
+            X_w = Matrix(X)
+            open(PATH*"tf_($(t_f))|dt_($(dt))|rm_($(r_max))|s=($(s))|K_($(K))_GPU.xyz", "a") do f
+                write(f, "$(size(X, 1))\n")
+                write(f, "t=$(i*dt)\n")
+                writedlm(f,hcat(X_f_2, X_w), ' ')
+            end
+        end
+
         if mod(i, n_knn) == 0
             # Calculating kNN
             knn_cu()
@@ -85,7 +94,7 @@ function diff_forces(n_knn, t_f, r_max, s, K)
     end
 end
 
-function fusion(PATH,t_f, r_max, s, K)
+function fusion(PATH,n_text,t_f, r_max, s, K)
     
     # Definig Variables for calculing the fusion
     # Calling global X 
@@ -102,7 +111,7 @@ function fusion(PATH,t_f, r_max, s, K)
             X_f[i] = 2
         end
     end
-    X_f_2 = Int.(vcat(X_f,X_f));
+    global X_f_2 = Int.(vcat(X_f,X_f));
 
     # Fusioning two Spheres
     Size = Float32((findmax(X[:,1])[1] - findmin(X[:,1])[1])/2 + 1)
@@ -110,23 +119,17 @@ function fusion(PATH,t_f, r_max, s, K)
     X_2[1:size(X,1),1] = X_2[1:size(X,1),1] .- (Size)
     X_2[size(X,1):end,1] = X_2[size(X,1):end,1] .+ Size
 
-    open(PATH*"/Test_Initial.xyz"; write=true) do f
-        write(f, "$(size(X_2, 1))\n")
-        write(f, "Initial Data ($(R_agg))\n")
-        writedlm(f,hcat(X_f_2, X_2), ' ')
-    end
-
     X = X_2 |> cu
 
     # Running Forces Function
-    diff_forces(n_knn, t_f, r_max, s, K)
+    diff_forces(PATH, n_text, n_knn, t_f, r_max, s, K)
     
-    # Saving final Data
-    X = Matrix(X)
-    open(PATH*"/Test_Final.xyz"; write=true) do f
-        write(f, "$(size(X, 1))\n")
-        write(f, "Initial Data ($(R_agg))\n")
-        writedlm(f,hcat(X_f_2, X), ' ')
-    end
+    # # Saving final Data
+    # X = Matrix(X)
+    # open(PATH*"/Test_Final.xyz"; write=true) do f
+    #     write(f, "$(size(X, 1))\n")
+    #     write(f, "Initial Data ($(R_agg))\n")
+    #     writedlm(f,hcat(X_f_2, X), ' ')
+    # end
     return 
 end
