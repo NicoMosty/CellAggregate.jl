@@ -53,9 +53,10 @@ function forces_cu(r_max, s, K)
     synchronize()
 end
 
-function diff_forces(PATH, n_text, n_knn, t_f, r_max, s, K)
+function diff_forces(PATH, SAVING, n_text, n_knn, t_f, r_max, s, K)
     # Definig Variables for calculing initial variables
-    global X
+    global X 
+    X = X |> cu
 
     # Inizializate Variables for kNN
     global i_Cell = CuArray{Float32}(undef, (size(X, 1), size(X, 1), 3))
@@ -72,7 +73,7 @@ function diff_forces(PATH, n_text, n_knn, t_f, r_max, s, K)
     p = Progress(Int(t_f/dt),barlen=25)
     for i in 0:Int(t_f/dt)
 
-        if mod(i, Int(t_f/n_text/dt)) == 0
+        if mod(i, Int(t_f/n_text/dt)) == 0 && SAVING
             X_w = Matrix(X)
             open(PATH*"tf_($(t_f))|dt_($(dt))|rm_($(r_max))|s=($(s))|K_($(K))_GPU.xyz", "a") do f
                 write(f, "$(size(X, 1))\n")
@@ -114,6 +115,8 @@ function fusion(PATH,n_text,t_f, r_max, s, K)
     global X_f_2 = Int.(vcat(X_f,X_f));
 
     # Fusioning two Spheres
+    println("Finding Equilibrium in one Aggregate")
+    diff_forces(PATH, false, n_text, n_knn, 5000, r_max, s, K)
     Size = Float32((findmax(X[:,1])[1] - findmin(X[:,1])[1])/2 + 1)
     X_2 = vcat(X,X) |> cu
     X_2[1:size(X,1),1] = X_2[1:size(X,1),1] .- (Size)
@@ -122,14 +125,7 @@ function fusion(PATH,n_text,t_f, r_max, s, K)
     X = X_2 |> cu
 
     # Running Forces Function
-    diff_forces(PATH, n_text, n_knn, t_f, r_max, s, K)
-    
-    # # Saving final Data
-    # X = Matrix(X)
-    # open(PATH*"/Test_Final.xyz"; write=true) do f
-    #     write(f, "$(size(X, 1))\n")
-    #     write(f, "Initial Data ($(R_agg))\n")
-    #     writedlm(f,hcat(X_f_2, X), ' ')
-    # end
+    println("Running Forces Function")
+    diff_forces(PATH, true, n_text, n_knn, t_f, r_max, s, K)
     return 
 end
