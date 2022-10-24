@@ -111,7 +111,7 @@ function fusion(PATH,n_text,t_f, r_max, fp, K)
     
     # Positioning tho Aggregates
     Angle = 2*pi*rand()
-    Size = Float32((findmax(X[:,1])[1] - findmin(X[:,1])[1])/2 + 0.5) 
+    Size = Float32((findmax(X[:,1])[1] - findmin(X[:,1])[1])/2 + 1) 
     Move = vcat(repeat([-Size 0 0],size(X,1)),repeat([Size 0 0],size(X,1))) |> cu
     Rotate = [cos(Angle) -sin(Angle) 0; sin(Angle) cos(Angle) 0; 0 0 1] |> cu
 
