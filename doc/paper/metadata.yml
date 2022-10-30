@@ -15,6 +15,7 @@ header-includes:
    - \usepackage{caption}
    - \usepackage{amsmath}
    - \captionsetup[figure]{font=scriptsize}
+   - \usepackage{algorithm2e}
 
 fontsize: 11pt
 papersize: letter

@@ -234,6 +234,9 @@ Aunque actualmente se han usado métodos con varios pasos teniendo en cuenta val
 Para la simulación es este tipo de sistemas se tiene software generado como lo puede ser *Ya||a* [@germann2019] que usa el lenguage de progrmamación CUDA usando GPU (tarjetas gráficas) permitiendo su paralelizacióñ en cada paso de Euler en un proceso similar hallado en la paralelización en los modelos de Cellular Potts [@tapia2011].
 
 ## Modelos de fuerzas características de la interacción celular
+
+![A](img/2.png){width=220}
+
 En los últimos años se han desarrollado y usado diferentes interacciones con los cuales se han modelado la interacción entre las celulas presentes en el agregado celular, entre los modelos mas usados se tiene los siguientes:
 
 ### Modelo Cúbico
@@ -273,7 +276,47 @@ Para los dos modelos mencionados anteriormente se tiene que **$\mu$** es el par�
 fuerza que es dependiente de **$r_{max}$**.
 
 # Metodología
-![A](img/2.png){width=220}
+
+Para poder realizar las simulaciones, el modelo basado en el centro de masa fue programado en [Julia](https://julialang.org/) usando un *wrapper* dentro del lenguage [CUDA](https://developer.nvidia.com/cuda-downloads) usado como lenguaje para computación en paralelo creado por Nvidia&reg;. El software usado para esta tésis se llama [CellAggregate.jl](https://github.com/NicoMosty/CellAggregate.jl). La búsqueda de vecinos cercanos de cada célula se realiza a partir de una versión modificada del algoritmo de vecinos cercanos [kNN](https://www.ibm.com/co-es/topics/knn) a partir de la programación paralela del mismo método en CUDA, el algoritmo se presenta en \ref{alg:kNN}. Para el cálculo de las fuerzas que interaccionan en cada célula se usa un calculo paralelizado a partir de los vecinos hallados con kNN. La ecuación de movimiento (\ref{eq:sum_forces}) fue resuelta con el método Leapfrog. 
+
+\begin{algorithm}
+    \caption{kNN algorithm for parallel computing}
+    \label{alg:kNN}
+    \DontPrintSemicolon
+    \SetAlgoLined
+
+    \KwResult{Devuelve una matriz con los índices de las esferas más cercanas (nn) a cada esfera en el agregado}
+    \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+
+    \Input{X(x,y,z), nn$\longleftarrow$number of nearest neighbors}
+    \Output{Matrix[nn,size(X)]}
+    \BlankLine
+    \Begin{
+        \emph{Variables Iniciales}\;
+        $Size \longleftarrow Size(X)$ ;
+        \BlankLine
+        
+        \emph{Defining Coordinates of each cell on the aggregates}\;
+        $i_{Cell} = repeat(X,Size) - traspose(repeat(X,Size))$;
+        \BlankLine
+        
+        \emph{Calculating Norm on every cell on the aggregate}
+        \BlankLine
+        $Dist = sqrt.(i_{Cell}.^{2})$
+
+        \emph{Calculating index of knof each cell in the aggregate}
+        \BlankLine
+        \For{i=1:nn}{
+            $idx[i,:]=findmin(Dist; dims=1)[2]$
+            \BlankLine
+            $Dist[idx[i,:]] .= Inf$
+        }
+    }
+\end{algorithm} 
+
+## Algoritmo Leapfrog
+
+<!-- Despite the Kelvin–Voigt model providing a good fit to theexperimental data, the rheology of cell aggregates is indeedmuch more complicated and it is unclear how cell–cell inter-actions give rise to the observed effective macroscopic mechan-ical properties. To understand this, we turned to agent-basedsimulations of cellular aggregates using the GPU-based soft-ware ya8a (see Fig. 4A), which supports easy implementation ofdiverse cellular behaviours.51For simplicity, we considered aminimal model taking into account passive and active inter-actions between cells, similarly to other agent-based modelsdescribing multicellular aggregates.31,47,52,53The dynamics of a --> -->
 
 # Bibliografia
 \footnotesize
