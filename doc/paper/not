@@ -1,0 +1,11 @@
+## Algoritmo kNN
+
+El algoritmo kNN (k vecions mas cercanos) es un modelo usado en modelos de clasificación no paramétrico que se basa en la predicción de objetos cercanos a partir de la proximidad o distancias (que pueden ser euclidianas) sobre la agrupación de cierta posición con respecto a su entorno con presencia de otras posiciones de ciertos objetos [@Raschka2018]. Aunque estos modelos son usados principalmente con fines de regresión tambien puede llegar a tener otros usos.
+
+Para lograr esta clasificaicón, se declara una etiqueta en la clase de objeto a clasificar y se realiza un cálculo de los objetos cercanos a cada uno de los objetos en cierto sistema[@Raschka2018].
+
+Si bien esto técnicamente se considera "voto por mayoría", el término "voto por mayoría" se usa más comúnmente en la literatura. La distinción entre estas terminologías es que "voto mayoritario" técnicamente requiere una mayoría superior al 50%, lo que funciona principalmente cuando solo hay dos categorías. Cuando tiene varias clases, por ejemplo, cuatro categorías, no necesita necesariamente el 50 % de los votos para llegar a una conclusión sobre una clase; puede asignar una etiqueta de clase con un voto superior al 25 %. 
+[@Raschka2018]
+## Algoritmo Leapfrog
+
+<!-- Despite the Kelvin–Voigt model providing a good fit to theexperimental data, the rheology of cell aggregates is indeedmuch more complicated and it is unclear how cell–cell inter-actions give rise to the observed effective macroscopic mechan-ical properties. To understand this, we turned to agent-basedsimulations of cellular aggregates using the GPU-based soft-ware ya8a (see Fig. 4A), which supports easy implementation ofdiverse cellular behaviours.51For simplicity, we considered aminimal model taking into account passive and active inter-actions between cells, similarly to other agent-based modelsdescribing multicellular aggregates.31,47,52,53The dynamics of a --> 

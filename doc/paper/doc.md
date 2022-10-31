@@ -83,7 +83,7 @@ Aunque el uso de agregados celulares para la formación de tejidos es el proceso
 
 Lo anterior ha intensificado la necesidad del uso de modelos computacionales multifocal de manera eficaz para poder entender los fenómenos presentes a diferentes escalas temporales y espaciales. La modelación de estos tipos de células tiene como finalidad la identificación de las condiciones para la explicación de ciertos comportamientos complejos como lo puede ser la homeostasis, aparición de estados patológicos, modelado de medicamentos y prueba de medicamentos en ciertos tipos celulares [@maspero2019]. Para lograr la simulación se han propuestos modelos biofísicamente aceptables para la interacción entre las células. Generalmente el estudio de la interacción de las células en la escala temporal y espacial de ciertos tipos de células en ambientes heterogéneos puede llegar a ayudar el estudio de ciertas técnicas actuales de una manera más eficiente [@maspero2019]. Aunque el uso de simulaciones es un factor de favorecer la investigación, para este caso se debe garantizar la correcta simulación de los tejidos a partir de los datos necesarios para la fusión de los agregados. Lo anterior es importante para verificar que en la fusión no haya falla en el consumo de oxígeno y nutrientes [@robu2019].
 
-# Fusión de Esferoides y Tiempo de Fusión
+## Fusión de Esferoides y Tiempo de Fusión
 
 El tiempo de adhesión es un parámetro que se debe tener en cuenta para la determinación de la velocidad de impresión de las diferentes capas sucesivas [@boland2003]. De la fusión de esferoides se sabe experimentalmente que durante el proceso los tejidos blandos esféricos se comportan como dos gotas de fluidos viscoelásticos fusionándose, cuya descripción requiere de una modelación hidrodinámica a priori. No obstante, la simplicidad de la geometría de la fusión no permite una descripción del proceso de la fusión a partir de la conservación de masa presente en la fusión de dos gotas viscosas [@flenner2012].
 
@@ -314,9 +314,46 @@ Para poder realizar las simulaciones, el modelo basado en el centro de masa fue 
     }
 \end{algorithm} 
 
+## Algoritmo kNN
+
+El algoritmo kNN (k vecions mas cercanos) es un modelo usado en modelos de clasificación no paramétrico que se basa en la predicción de objetos cercanos a partir de la proximidad o distancias (que pueden ser euclidianas) sobre la agrupación de cierta posición con respecto a su entorno con presencia de otras posiciones de ciertos objetos [@raschka2018]. Aunque estos modelos son usados principalmente con fines de regresión tambien puede llegar a tener otros usos.
+
+Para lograr esta clasificaicón, se declara una etiqueta en la clase de objeto a clasificar y se realiza un cálculo de los objetos cercanos a cada uno de los objetos en cierto sistema [@raschka2018]. Este modelo hace uso de vectores de distancia en un espacio multidimensional asumiendo cada objeto como $p$ y  los atributios de evaluación como $q$, donde los vectores se representan como en la ecuación (\ref{eq:kNN1}). [@hastie_tibshirani_friedman_2004]
+
+\begin{equation}
+    x_{i}=(x_{1i},x_{2i},...,x_{pi})\in X
+    \label{eq:kNN1}
+\end{equation}
+
+El espacio cartesiano (X) es dividido bajo ciertos parámetros de localización. Para cada punto identificado en el espacio se le asigna una clase de cercanía para cada punto. Normalmente, para el cálculo de distancias se suele usar distancias euclidianas como se puede ver en la ecuación (\ref{eq:euclidean_dist})[@hastie_tibshirani_friedman_2004].
+
+\begin{equation}
+    d(x_{i},x_{j})=\sqrt{\sum_{r=1}^{p}(x_{ri}-x_{rj})^{2}}
+    \label{eq:euclidean_dist}
+\end{equation}
+
+La fase inicial del algoritmo almacena un conjunto de vectores de las distancias de cada punto con respecto al resto. Despues de generada la información inicial, se requiere una fase de clasificación donde se calculan las distancias de cada conjunto de puntos a partir de los vectores inicializados en el espacio característico [@Cover1952]. Con la información anterior se calcula la distancia entre los vectores hallados anteriormente y a partir de las distancias halaldas, se seleccionan los $k-ésimos$ vecinos mas cercanos [@Cover1952]. Dependiendo del espacio a evaluar se pueden usar diferentes métricas de distancia como lo pueden ser Manhattan, Minkowski o Hamming.
+
+Para poder evaluar ul valor óptimo k para el algoritmo depende del sistema que se vaya a evaluar. La asignación del valor k tiende a ser un parámetro de equilibrio en donde conlleva a escoger valores excesivos o faltantes. Para el caso de valores bajos se pueden presentar varianzas muy altas pero altos sesgos. Esta elección depende principalmente de la naturaleza de los datos de entrada. Generalmente se recomienda la elección de valores impares para k para evitar empates en la clasificación[@hastie_tibshirani_friedman_2004].
+
+La elección de k dependerá en gran medida de los datos de entrada, ya que los datos con más valores atípicos o ruido probablemente funcionarán mejor con valores más altos de k. En general, se recomienda tener un número impar para k para evitar empates en la clasificación, y las tácticas de validación cruzada pueden ayudarlo a elegir la k óptima para su conjunto de datos [@raschka2018].
+
+Para el caso del algoritmo (\ref{alg:kNN}) usado en el repositorio ([CellAggregate.jl](https://github.com/NicoMosty/CellAggregate.jl)) se puede ver que primero se define el tamaño de las coordenadas de las células a evaluar. Despues se evalua la fase inicial en donde se calcula la diferencia de distancias $i_{Cell}$ en las dimensiones espaciales presentes en los puntos presentes en X para poder generar un arreglo de vectores con las distancias entre los diferentes puntos presentes en X. Despues se calcula la distancia $Dist$ a partir del uso de la métrica de la distancia euclidiana para el cálculo de estas distancias entre los diferentes puntos presentes en X. Al final se halla los valores con menor distancia de manera iterativa con respecto al parámetro $nn$.
+
+Para el caso de la evaluación del valor $k$ de de células evaluadas como esferas (como aproximación) se toma en cuenta la naturaleza de los datos. Como se tiene esferas, entonces se va a tomar una rama de la geometría que se enfoca en el estudio del empaquetamiento de esferas. Para este caso se tomó el empaquetemiento cerrado de esferas cerradas con el cual se logra la disposición mas densa de esferas. Gauss demostró que esta distribución genera la densidad más alta con la fracción vacía mas baja logrado a partir de un empaquetamiento hexagonal, la fracción ocupada por las esferas se puede ver en la ecuación (\ref{eq:frac_occ_hex}) y el empaquetamiento se puede ver en la imagen (\ref{img:perspHCP}) [@conway_a_2011].
+
+![Perspectivas del Empaquetamiento HCP \label{img:perspHCP}](img/4.png){width=220} 
+
+\begin{equation}
+    \frac{\pi}{3\sqrt{2}}\approx 0.74048
+    \label{eq:frac_occ_hex}
+\end{equation}
+
+Para el caso del empaquetamiento hexagonal, se tiene que la máxima cantidad de esferas que puede rodear a una esfera interna es de 12 esferas. Por lo anterior se escogió el valor de 13 como k para el algoritmo kNN por las considereraciones físicas del sistema y se escogió el número impar recomendado por [@raschka2018] para un mejor funcionamiento del algoritmo.
+
 ## Algoritmo Leapfrog
+PENDIENTE
 
-<!-- Despite the Kelvin–Voigt model providing a good fit to theexperimental data, the rheology of cell aggregates is indeedmuch more complicated and it is unclear how cell–cell inter-actions give rise to the observed effective macroscopic mechan-ical properties. To understand this, we turned to agent-basedsimulations of cellular aggregates using the GPU-based soft-ware ya8a (see Fig. 4A), which supports easy implementation ofdiverse cellular behaviours.51For simplicity, we considered aminimal model taking into account passive and active inter-actions between cells, similarly to other agent-based modelsdescribing multicellular aggregates.31,47,52,53The dynamics of a --> -->
-
+<!-- Despite the Kelvin–Voigt model providing a good fit to theexperimental data, the rheology of cell aggregates is indeedmuch more complicated and it is unclear how cell–cell inter-actions give rise to the observed effective macroscopic mechan-ical properties. To understand this, we turned to agent-basedsimulations of cellular aggregates using the GPU-based soft-ware ya8a (see Fig. 4A), which supports easy implementation ofdiverse cellular behaviours.51For simplicity, we considered aminimal model taking into account passive and active inter-actions between cells, similarly to other agent-based modelsdescribing multicellular aggregates.31,47,52,53The dynamics of a --> 
 # Bibliografia
 \footnotesize
