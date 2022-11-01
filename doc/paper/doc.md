@@ -351,9 +351,49 @@ Para el caso de la evaluación del valor $k$ de de células evaluadas como esfer
 
 Para el caso del empaquetamiento hexagonal, se tiene que la máxima cantidad de esferas que puede rodear a una esfera interna es de 12 esferas. Por lo anterior se escogió el valor de 13 como k para el algoritmo kNN por las considereraciones físicas del sistema y se escogió el número impar recomendado por [@raschka2018] para un mejor funcionamiento del algoritmo.
 
-## Algoritmo Leapfrog
-PENDIENTE
+## Algoritmo Cálculo de Fuerzas
 
-<!-- Despite the Kelvin–Voigt model providing a good fit to theexperimental data, the rheology of cell aggregates is indeedmuch more complicated and it is unclear how cell–cell inter-actions give rise to the observed effective macroscopic mechan-ical properties. To understand this, we turned to agent-basedsimulations of cellular aggregates using the GPU-based soft-ware ya8a (see Fig. 4A), which supports easy implementation ofdiverse cellular behaviours.51For simplicity, we considered aminimal model taking into account passive and active inter-actions between cells, similarly to other agent-based modelsdescribing multicellular aggregates.31,47,52,53The dynamics of a --> 
+\begin{algorithm}
+    \caption{Forces algorithm for parallel computing}
+    \label{alg:ForcesAlg}
+    \DontPrintSemicolon
+    \SetAlgoLined
+
+    \KwResult{Devuelve una matriz con los valores del dX generado con la fuerza que depende del potencial usado}
+    \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+
+    \Input{X(x,y,z), idx=kNN(X)}
+    \Output{dX=Matrix[size(X)]}
+    \BlankLine
+    \Begin{
+        \emph{Defining Coordinates of each cell on the aggregates}\;
+        $r_p = X - X[rand_{idx}]$;
+        $r = reshape(repeat(X), nn, size(X), 3) - X[idx]$;
+        \BlankLine
+        
+        \emph{Finding Distances}\;
+        $dist = ((sum(r .^ 2)).^{0.5})$\;
+        $dist = reshape(repeat(dist) ,nn ,size(X), 3)$;
+        \BlankLine
+
+        \emph{Finding forces for each cell}\;
+        $F = (- K.*((dist .- r_{max}).^2) .* (dist .- s)) .* r ./ dist$\;
+        $F[dist.>r_{max}].= 0$
+        \BlankLine
+
+        \emph{Calculating de dX->dX[i,:]+=r/dist*F}\;
+        $dX = sum(F[2:end]; dims=1)$;
+        \BlankLine
+
+        \emph{Adding fp for random forces}\;
+        $dX = dX - fp .* (r_p ./ ((sum(r_p .^ 2)).^{0.5}))$;
+    }
+\end{algorithm} 
+
+El modelo basado en el centro de masa de las células usado para esta herramienta toman en cuenta las coordenadas del centro de masa de cada célula en un lapso temporal suponiendo que las células se comportan como esferas rígidas [@mathias2020]. Se supone principalmente que las interacciones entre las células están regidas a un potencial de interación dependiente principalmente de una distancia de interacción máxima ($r_{max}$) y  una distancia inferior ($s$). Con estas dos distancias se usan en la expresión a partir de que la magnitud de interacción solo depende de la distancia entre las células ($r$) [@delile2017]. Con las interacciones dependientes de la distancia se tiene que si las células se encuentran en una distancia menor de $s$, las células tienen un potencial de repulsión; cuando la distancia se encuentra entre la distancia mínima ($s$) y la distancia máxima ($r_{max}$) se ejerce una fuerza de interacción en el modelo [@mathias2020]. Para estos potenciales de interacción se tienen los modelos \ref{eq:mecagen_eq} y \ref{eq:GLS_eq} explicados anteriormente.
+
+Para poder calcular las fuerzas, se presenta el algoritmo (\ref{alg:ForcesAlg}) usado en el repositorio ([CellAggregate.jl](https://github.com/NicoMosty/CellAggregate.jl)) se puede ver que primero se define la matriz de coordenadas de los puntos presentes en el agregado celular, los índices de los agregados celulares (idx) mas cercanos de cada célula calcualdo con el algoritmo \ref{alg:kNN} explicado anteriormente y  se puede ver que se toma un index $r_p$ que representa la fuerza contráctil que se ha visto que tiene encidencia importante en el modelo. Con las anteriores variables se calcula la variable $r$ que representa la distancia de cada célula con sus vecinos mas cercanos respectivamente. Con los vectores halladas, se hallan las distancias a partir de la métrica de distancia euclídea y se repite en una matriz para facilitar los cálculos matriciales presentes en los cálculos con tarjeta gráfica. Con los potenciales de interacción presentes en \ref{eq:mecagen_eq} y \ref{eq:GLS_eq} se calcula la fuerza ejercida por cada vecino mas cércano. Con las fuerzas calculadas se halla la suma de las fuerzas de los vecinos para hallar el dX calculado a partir del vector unitario $r/dist$ de cada interacción. Al final se suma la interacción contráctil y se halla la velocidad de cada célula en un intervalo de tiempo pequeño.
+
+
 # Bibliografia
 \footnotesize
