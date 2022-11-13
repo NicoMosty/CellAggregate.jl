@@ -15,7 +15,6 @@ function cu_knn()
     # Definig Variables for calculing knn
     global i_Cell; global Dist; global X
     global idx; global rand_idx
-    # global idx = hcat([[CartesianIndex(i,1) for i=1:nn] for j=1:size(X,1)]...)
 
     # Defining Coordinates of each cell on the aggregates
     i_Cell = reshape(repeat(X, size(X ,1)), size(X ,1), size(X ,1), 3) - reshape(repeat(X, inner=(size(X ,1),1)), size(X ,1), size(X ,1), 3)
@@ -29,6 +28,5 @@ function cu_knn()
         idx[i,:] = findmin(Dist; dims=1)[2]
         Dist[idx[i,:]] .= Inf
     end
-    rand_idx = getindex.(idx, 1)[getindex.(rand(2:nn,size(X,1)) ,1),:][1:n_knn,:]
     synchronize()
 end
