@@ -1,5 +1,6 @@
 using LinearAlgebra: norm
 using NearestNeighbors
+using Shuffle
 using CUDA
 
 function force(X, idxs, r_max, fp, K )
@@ -29,9 +30,7 @@ function cu_forces(t, r_max, fp, K)
     global X; global dX; global idx
 
     # Calculating distance for random forces (contractile)
-    r_p = X - X[rand_idx[mod(t, n_knn)+1, :], :]
-    # r_p = X - X[idx[getindex.(rand(2:nn,size(X,1)) ,1),:][1,:], :]
-    # r_p = X - X[[rand(getindex.(idx, 1)[2:end,i]) for i in 1:size(getindex.(idx, 1),2)],:]
+    r_p = X - X[rand_idx[mod(t, size(X,1))+1, :], :]
     # Finding Distances
     r = reshape(repeat(X, inner=(nn,1)), nn, size(X)[1], 3) - X[getindex.(idx,1),:]
     
