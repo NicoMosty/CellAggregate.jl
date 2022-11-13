@@ -2,7 +2,7 @@ using ProgressMeter
 include("forces.jl")
 CUDA.allowscalar(true)
 
-function euler(X, dt, t, t_knn, args...)
+function cpu_simulate(X, dt, t, t_knn, args...)
     # Adding Graph for kNN
     if t%t_knn | t == 0
         global kdtree = KDTree(X[:,1:3]')
@@ -17,7 +17,7 @@ function euler(X, dt, t, t_knn, args...)
     return X
 end
 
-function diff_forces(PATH, SAVING, n_text, n_knn, t_f, r_max, fp, K)
+function simulate(PATH, SAVING, n_text, n_knn, t_f, r_max, fp, K, R_agg)
     # Definig Variables for calculing initial variables
     global X 
     X = X |> cu
@@ -26,7 +26,8 @@ function diff_forces(PATH, SAVING, n_text, n_knn, t_f, r_max, fp, K)
     global i_Cell = CuArray{Float32}(undef, (size(X, 1), size(X, 1), 3))
     global Dist = CuArray{Float32}(undef, (size(X, 1), size(X, 1)))
     global idx = hcat([[CartesianIndex(i,1) for i=1:nn] for j=1:size(X,1)]...) |> cu
-    
+
+
     #Inizializate Variable for random force
     global rand_idx = CuArray{Int32}(undef, n_knn, size(X,1))
 
@@ -54,18 +55,15 @@ function diff_forces(PATH, SAVING, n_text, n_knn, t_f, r_max, fp, K)
 
         ## LEAPFROG ALGORITHM
         if mod(t,2) == 0
-            if mod(t, n_knn) == 0
+            if mod(t, n_knn) == 0 
                 # Calculating kNN
                 cu_knn()
-                # # Calculating kNN
-                # global idx = cpu_knn(Matrix(X), nn)
             end
 
             # Finding index for random forces in a given time (size(X,1))
-            if mod(t, size(X,1)) == 0
-                global rand_idx = getindex.(idx, 1)[getindex.(rand(2:nn,size(X,1)) ,1),:]
+            if mod(t, 2*size(X,1)) == 0 
+                global rand_idx = getindex.(idx, 1)[getindex.(rand(2:nn,2*size(X,1)) ,1),:]
             end
-            
             # Calculating Forces
             cu_forces(t, r_max, fp, K)
         else
@@ -76,37 +74,40 @@ function diff_forces(PATH, SAVING, n_text, n_knn, t_f, r_max, fp, K)
     end
 end
 
-function one_aggregate(PATH, STORE,n_text,t_f, r_max, fp, K)
+function one_aggregate(PATH, STORE,n_text,t_f, r_max, fp, K ,R_agg)
     
     # Definig Variables for calculing the fusion
     global X
 
-    # Finding External Cells on the Aggregate
-    X_w = Matrix(X)
-    X_f = zeros(size(X_w,1))
-    for i in 1:size(X_f,1)
-        A = sqrt(X_w[i,1]^2+X_w[i,2]^2+X_w[i,3]^2)
-        if A > 0.8*R_agg
-            X_f[i] = 1
-        else
-            X_f[i] = 2
+    if R_agg isa Number
+        # Finding External Cells on the Aggregate
+        X_w = Matrix(X)
+        X_f = zeros(size(X_w,1))
+        for i in 1:size(X_f,1)
+            A = sqrt(X_w[i,1]^2+X_w[i,2]^2+X_w[i,3]^2)
+            if A > 0.8*R_agg
+                X_f[i] = 1
+            else
+                X_f[i] = 2
+            end
         end
+        global X_f = Int.(X_f)
+    else
+        X_f = repeat([1.0], size(X,1))
     end
-    global X_f = Int.(X_f)
-
     # Running Forces Function
     println("Finding Equilibrium in one Aggregate")
-    diff_forces(PATH, STORE, n_text, n_knn, t_f, r_max, fp, K)
+    simulate(PATH, STORE, n_text, n_knn, t_f, r_max, fp, K, R_agg)
     return 
 end
 
-function fusion(PATH,n_text,t_f, r_max, fp, K)
+function fusion(PATH,STORE, n_text,t_f, r_max, fp, K, R_agg)
     
     # Definig Variables for calculing the fusion
     global X; global X_f
 
     # Fusioning two Spheres
-    one_aggregate(PATH,false,n_text,10000, r_max, fp, K)
+    one_aggregate(PATH,false,n_text,t_f/4, r_max, fp, K, R_agg)
     global X_f = Int.(vcat(X_f,X_f));
     
     # Positioning tho Aggregates
@@ -122,6 +123,6 @@ function fusion(PATH,n_text,t_f, r_max, fp, K)
 
     # Running Forces Function
     println("Finding Equilibrium in two Aggregate")
-    diff_forces(PATH, true, n_text, n_knn, t_f, r_max, fp, K)
+    simulate(PATH, STORE, n_text, n_knn, t_f, r_max, fp, K, R_agg)
     return 
 end
