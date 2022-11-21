@@ -11,7 +11,7 @@ function cpu_knn(X, nn)
     return Matrix(idx)
 end
 
-function cu_knn()
+function cu_knn(nnn)
     # Definig Variables for calculing knn
     global i_Cell; global Dist; global X
     global idx; global rand_idx
@@ -24,7 +24,7 @@ function cu_knn()
     # i_Cell = nothing; GC.gc(true)
 
     # Calculating index of knof each cell in the aggregate
-    for i = 1:nn
+    for i = 1:nnn
         idx[i,:] = findmin(Dist; dims=1)[2]
         Dist[idx[i,:]] .= Inf
     end

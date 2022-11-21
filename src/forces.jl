@@ -3,7 +3,7 @@ using NearestNeighbors
 using Shuffle
 using CUDA
 
-function force(X, idxs, r_max, fp, K )
+function cpu_force(X, idxs, r_max, fp, K )
     # Initialise displacement array
     global dX = zeros(Float64, size(X)[1], 3)
 
@@ -50,5 +50,28 @@ function cu_forces(t, r_max, fp, K)
 
     # Adding fp for random forces 
     dX = dX - fp .* (r_p ./ dist_p)
+    synchronize()
+end
+
+function cui_force(t, force, fp, nnn)
+    # Definig Variables for calculing dX
+    global X; global dX; global idx
+
+    # Calculating distance for random forces (contractile)
+    r_p = X - X[rand_idx[mod(t, size(X,1))+1, :], :]
+    # Finding Distances/Norm for random forces
+    dist_p = (sum(r_p .^ 2, dims=2).^ 0.5)
+
+    # Finding distances
+    r = reshape(repeat(X, inner=(nnn,1)), nnn, size(X)[1], 3) - X[getindex.(idx,1),:]
+
+    # Finding Distances(Norm)
+    dist = ((sum(r .^ 2, dims=3)) .^ 0.5)[:,:,1]
+
+    # Finding forces for each cell
+    F = force.f(dist) .* r ./ dist
+
+    # Calculating de dX   -> dX[i,:] +=  r/dist * F
+    dX = sum(F[2:end,:,:]; dims=1)[1,:,:] - fp .* (r_p ./ dist_p)
     synchronize()
 end

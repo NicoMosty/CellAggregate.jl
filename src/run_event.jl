@@ -74,7 +74,7 @@ function simulate(PATH, SAVING, n_text, n_knn, t_f, r_max, fp, K, R_agg)
     end
 end
 
-function one_aggregate(PATH, STORE,n_text,t_f, r_max, fp, K ,R_agg)
+function one_aggregate(PATH, STORE,n_text,t_f, r_max, fp, K ,R_agg, n_knn)
     
     # Definig Variables for calculing the fusion
     global X
@@ -101,13 +101,13 @@ function one_aggregate(PATH, STORE,n_text,t_f, r_max, fp, K ,R_agg)
     return 
 end
 
-function fusion(PATH,STORE, n_text,t_f, r_max, fp, K, R_agg)
+function fusion(PATH,STORE, n_text,t_f, r_max, fp, K, R_agg, n_knn)
     
     # Definig Variables for calculing the fusion
     global X; global X_f
 
     # Fusioning two Spheres
-    one_aggregate(PATH,false,n_text,t_f/4, r_max, fp, K, R_agg)
+    one_aggregate(PATH,false,n_text,t_f/4, r_max, fp, K, R_agg, n_knn)
     global X_f = Int.(vcat(X_f,X_f));
     
     # Positioning tho Aggregates
