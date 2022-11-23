@@ -1,55 +1,52 @@
-macro select_force(type)
-    # Parameters
-    μ = (:μ)
-    r_max = (:r_max)
-    r_min = (:r_min)
-    α = (:α)
+abstract type ForceType          end
+abstract type ModelParameter     end
 
-    # List of forces functions
-    if type == (:cubic)
-        struct_select = quote
-            Base.@kwdef mutable struct $type
-                μ::Float64
-                r_max::Float64
-                r_min::Float64
-                f::Function = r -> ifelse.(
-                    r.<=$r_max, 
-                    -$μ .* (r .- r_max).^2 .* (r .- r_min), 
-                    0.0
-                )
-            end
+# Making for Forces and Struct
+macro make_struct_func(name)
+
+    # Generating Variables
+    variables, force_func = list_force_type(name)
+    params=[:($v::$(Symbol("Float64"))) for v in variables]
+
+    # Generating Macro
+    selected = quote
+        # Generating Struct
+        Base.@kwdef struct $name <: ForceType
+        $(params...)
         end
-    elseif type == (:GLS)
-        struct_select = quote
-            Base.@kwdef struct $type
-                μ::Float64
-                r_max::Float64
-                r_min::Float64
-                α :: Float64
-                f::Function = r -> ifelse.(
-                    r.<=$r_min,  
-                    -$μ .* log(1 .+ r .- $r_min),
-                    ifelse.(
-                        r.<=$r_max,
-                        -$μ .* (r .- $r_min) .* exp.(-α .* (r .- r_min)),
-                        0 
-                    )
-                )
-            end
-        end
-    else
-        struct_select = quote
-            println("FORCE FUNCTION NOT FOUNDED")
-        end
+        # Generating ForceFunc
+        $(force_func)
     end
-    return esc(:($struct_select))
+
+    # Generating Struct & ForceFunc
+    return esc(:($selected))
+
 end
 
-Base.@kwdef struct ModelParameters
-    Force::Dict
-    Contractile::Dict
-    Time::Dict
-    Neighbor::Dict
-    Geometry::Dict
-    Simulation::Dict
+# Model Parameters
+Base.@kwdef mutable struct Contractile <: ModelParameter
+    fₚ       :: Float64 
+end
+Base.@kwdef mutable struct Time        <: ModelParameter
+    t_f      :: Float64
+    dt       :: Float64
+end 
+Base.@kwdef mutable struct Neighbor    <: ModelParameter
+    n_knn    :: Int64
+    nn       :: Int64
+end
+Base.@kwdef mutable struct Geometry    <: ModelParameter
+    R_agg    :: Float64
+    num_agg  :: Int64
+end
+Base.@kwdef mutable struct Simulation  <: ModelParameter
+    n_text   :: Int64
+end
+Base.@kwdef mutable struct Model
+    Force          :: ForceType
+    ParContractile :: Contractile
+    ParTime        :: Time
+    ParNeighbor    :: Neighbor
+    ParGeometry    :: Geometry  
+    ParSimulation  :: Simulation
 end
