@@ -28,7 +28,7 @@ function simulate(PATH, SAVING, n_text, n_knn, t_f, r_max, fp, K, R_agg)
     global idx = hcat([[CartesianIndex(i,1) for i=1:nn] for j=1:size(X,1)]...) |> cu
 
 
-    #Inizializate Variable for random force
+    #Inizializate Variable for Contractile force
     global rand_idx = CuArray{Int32}(undef, n_knn, size(X,1))
 
     # Inizializate Variables for Forces
