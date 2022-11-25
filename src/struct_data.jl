@@ -33,7 +33,6 @@ Base.@kwdef mutable struct Contractile <: ModelParameter
     fₚ       :: Float64 
 end
 Base.@kwdef mutable struct Time        <: ModelParameter
-    t        :: Float64 = 0
     t_f      :: Float64
     dt       :: Float64
 end 
@@ -47,6 +46,7 @@ Base.@kwdef mutable struct Geometry    <: ModelParameter
 end
 Base.@kwdef mutable struct Simulation  <: ModelParameter
     n_text   :: Int64
+    path     :: String
 end
 Base.@kwdef mutable struct Model
     Force          :: ForceType
@@ -89,6 +89,7 @@ Base.@kwdef mutable struct Aggregate
     Position     :: PositionCell
     Neighbor     :: NeighborCell
     Force        :: ForceCell
+    t            :: Float64
     function Aggregate(n,p)
         ne = NeighborCell(
             i_Cell   = CuArray{Float32}(undef, (size(p.X, 1), size(p.X, 1), 3)),
@@ -103,6 +104,7 @@ Base.@kwdef mutable struct Aggregate
             dist_p = zeros(size(p.X,1)),
             F      = zeros(n.nn, size(p.X)[1],3)
         )
-        new(n,p,ne,fo)
+        t = 0.0
+        new(n,p,ne,fo,t)
     end
 end

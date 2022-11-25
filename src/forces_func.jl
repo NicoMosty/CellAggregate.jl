@@ -13,7 +13,7 @@ function list_force_type(name)
         force_func(p::$name, r) = ifelse.(
           r .<= p.rₘₐₓ,
           - p.μ₁ .* (r .- p.rₘₐₓ).^2 .* (r .- p.rₘᵢₙ),
-          0
+          0.0
         )
       )
       return var , func
@@ -24,11 +24,11 @@ function list_force_type(name)
       func = :(
         force_func(p::$name, r) = ifelse.(
           r .<= p.rₘᵢₙ,  
-          -p.μ₁ .* log.(1 .+ r .- p.rₘᵢₙ),
-          ifelse.(
-              r .<= p.rₘₐₓ,
-              -p.μ₁ .* (r .- p.rₘᵢₙ) .* exp.(-p.α .* (r .- p.rₘᵢₙ)),
-              0 
+          - p.μ₁ .* log.(1 .+ r .- p.rₘᵢₙ),
+          ifelse(
+              r <= p.rₘₐₓ,
+              -p.μ₁ .* (r .- p.rₘᵢₙ) .* exp(-p.α .* (r .- p.rₘᵢₙ)),
+              0.0
           )
         )
       )
