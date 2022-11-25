@@ -1,7 +1,6 @@
 using LinearAlgebra: norm
 using NearestNeighbors
 using Shuffle
-using CUDA
 
 function cpu_force(X, idxs, r_max, fp, K )
     # Initialise displacement array
@@ -53,25 +52,38 @@ function cu_forces(t, r_max, fp, K)
     synchronize()
 end
 
-function cui_force(t, force, fp, nnn)
+function cui_force(t::Time, f::Contractile, Agg::Aggregate)
     # Definig Variables for calculing dX
-    global X; global dX; global idx
+    global Agg
 
     # Calculating distance for random forces (contractile)
-    r_p = X - X[rand_idx[mod(t, size(X,1))+1, :], :]
+    Agg.Force.r_p = Agg.Position.X .- 
+                        Agg.Position.X[
+                            Agg.Neighbor.rand_idx[
+                                Int.(mod(
+                                    Agg.t, size(Agg.Position.X, 1)
+                                ) .+ 1),
+                            :],
+                        :]
+    
     # Finding Distances/Norm for random forces
-    dist_p = (sum(r_p .^ 2, dims=2).^ 0.5)
+    Agg.Force.dist_p = sum(Agg.Force.r_p .^ 2, dims=2).^ 0.5
 
     # Finding distances
-    r = reshape(repeat(X, inner=(nnn,1)), nnn, size(X)[1], 3) - X[getindex.(idx,1),:]
+    Agg.Force.r = reshape(
+            repeat(Agg.Position.X, inner=(Agg.ParNeighbor.nn,1)), 
+            Agg.ParNeighbor.nn, size(Agg.Position.X)[1], 3
+        ) .- 
+        Agg.Position.X[getindex.(Agg.Neighbor.idx,1),:]
 
     # Finding Distances(Norm)
-    dist = ((sum(r .^ 2, dims=3)) .^ 0.5)[:,:,1]
+    Agg.Force.dist = ((sum(Agg.Force.r .^ 2, dims=3)) .^ 0.5)[:,:,1]
 
-    # Finding forces for each cell
-    F = force.f(dist) .* r ./ dist
+    # # Finding forces for each cell
+    Agg.Force.F = force(Agg.Force.dist) .* Agg.Force.r ./ Agg.Force.dist
 
-    # Calculating de dX   -> dX[i,:] +=  r/dist * F
-    dX = sum(F[2:end,:,:]; dims=1)[1,:,:] - fp .* (r_p ./ dist_p)
+    # # Calculating de dX   -> dX[i,:] +=  r/dist * F
+    Agg.Position.dX = sum(Agg.Force.F[2:end,:,:]; dims=1)[1,:,:] -                                       
+                        f.fₚ .* (Agg.Force.r_p ./ Agg.Force.dist_p)
     synchronize()
 end

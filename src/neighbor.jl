@@ -11,22 +11,42 @@ function cpu_knn(X, nn)
     return Matrix(idx)
 end
 
-function cu_knn(nnn)
+function cu_knn(Agg::Aggregate)
     # Definig Variables for calculing knn
-    global i_Cell; global Dist; global X
-    global idx; global rand_idx
-
+    global Agg
+    
     # Defining Coordinates of each cell on the aggregates
-    i_Cell = reshape(repeat(X, size(X ,1)), size(X ,1), size(X ,1), 3) - reshape(repeat(X, inner=(size(X ,1),1)), size(X ,1), size(X ,1), 3)
+    Agg.Neighbor.i_Cell = reshape(
+                repeat(
+                    Agg.Position.X, 
+                    size(Agg.Position.X ,1)
+                ), 
+                size(Agg.Position.X ,1), 
+                size(Agg.Position.X ,1), 
+                3
+            ) - 
+            reshape(
+                repeat(
+                    Agg.Position.X, 
+                    inner=(size(Agg.Position.X ,1),1)
+                ), 
+                size(Agg.Position.X ,1), 
+                size(Agg.Position.X ,1), 
+                3
+            )
 
     # Calculating Norm on every cell on the aggregate
-    Dist = sqrt.(i_Cell[:,:,1] .^ 2 + i_Cell[:,:,2] .^ 2 + i_Cell[:,:,3] .^ 2)
-    # i_Cell = nothing; GC.gc(true)
+    Agg.Neighbor.Dist = sqrt.(
+                Agg.Neighbor.i_Cell[:,:,1] .^ 2 + 
+                Agg.Neighbor.i_Cell[:,:,2] .^ 2 + 
+                Agg.Neighbor.i_Cell[:,:,3] .^ 2
+                )
+    # # i_Cell = nothing; GC.gc(true)
 
     # Calculating index of knof each cell in the aggregate
-    for i = 1:nnn
-        idx[i,:] = findmin(Dist; dims=1)[2]
-        Dist[idx[i,:]] .= Inf
+    for i = 1:Agg.ParNeighbor.nn
+        Agg.Neighbor.idx[i,:] = findmin(Agg.Neighbor.Dist; dims=1)[2]
+        Agg.Neighbor.Dist[Agg.Neighbor.idx[i,:]] .= Inf
     end
     synchronize()
 end

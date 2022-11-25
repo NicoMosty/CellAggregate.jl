@@ -1,3 +1,5 @@
+using CUDA
+
 abstract type ForceType          end
 abstract type ModelParameter     end
 
