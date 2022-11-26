@@ -168,4 +168,22 @@ function SumAgg(Agg::Aggregate, m::Model)
         outline, 
         size(m.Geometry.position ,1)
     )
+
+    # Rotating Image
+    # Angle = 2*pi*rand()
+    Angle = 0
+    Rotate = [
+        cos(Angle)   -sin(Angle)   0; 
+        sin(Angle)   cos(Angle)    0; 
+        0            0             1
+    ] |> cu
+    
+    Agg.Position.X = vcat(
+        (Rotate*Agg.Position.X[
+            1:Int(size(Agg.Position.X, 1) / 2), 
+        :]')', 
+        Agg.Position.X[
+            Int(size(Agg.Position.X, 1) / 2)+1:end
+        ,:]
+    )
 end
