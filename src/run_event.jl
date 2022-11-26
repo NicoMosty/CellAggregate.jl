@@ -88,7 +88,7 @@ function simulate(SAVING::Bool, m::Model, p::F, Agg::Aggregate) where F <: Force
             open(m.Simulation.path, "a") do f
                 write(f, "$(size(Agg.Position.X, 1))\n")
                 write(f, "t=$(Agg.t)\n")
-    #             writedlm(f,hcat(X_f, X_w), ' ')
+                # writedlm(f,hcat(Agg.Index.Outline, Matrix(Agg.Position.X)), ' ')
                 writedlm(f,hcat(repeat([1.0],size(Agg.Position.X, 1)), X_w), ' ')
             end
         end
