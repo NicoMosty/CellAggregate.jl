@@ -1,39 +1,44 @@
-using LinearAlgebra: norm
-using ProgressMeter: Progress
-using DataFrames
+using ProgressMeter
+using DelimitedFiles
 
 # Generating coordenates of a Cell
-function coord_sph(R_agg, x_o, y_o, z_o)
+function coord_sph(R_agg)
     theta = rand(0:0.1:pi)
     phi = rand(0:0.1:2*pi)
     radius = rand(0:1e-7:R_agg)
 
-    x = radius*sin(theta)*cos(phi) + x_o
-    y = radius*sin(theta)*sin(phi) + y_o
-    z = radius*cos(theta) + z_o
-
-    return [vcat(x,y,z)]
+    return [
+        radius*sin(theta)*cos(phi),
+        radius*sin(theta)*sin(phi),
+        radius*cos(theta)
+    ]
 end
 
-# Adding circles into a Cell Aggregate
-function sphere(R_agg, N, r_cell, x_o, y_o, z_o)
-    global X = coord_sph(R_agg, x_o, y_o, z_o)
-    p = Progress(N-1,barlen=25)
-    for n in 1:N-1
-        while true
-            global X_n = coord_sph(R_agg,x_o,y_o,z_o)
-            for i in 1:size(X,1)
-                global r = X[i] - X_n[1]
-                global dist = norm(r)
-                if dist < (1.8 * r_cell)
-                    global X_n = [vcat(0,0,0)]
-                end
-            end 
-            if norm(X_n) == 0
-                continue
-            else
-                global X = vcat(X, X_n)
+function sphere(R_agg)
+    n = Int(ceil(0.5*(R_agg^3)))
+    X = [0 0 0] |> cu
+    p = Progress(n,barlen=25)
+    global k 
+    k = false
+    for _ in 1:n
+        if k == true
+            break
+        end
+        for j in 1:n
+            # Random i
+            X_i = coord_sph(R_agg) |> cu
+            dist = sqrt.(sum((X .- X_i').^2, dims=2))
+            if j == n
+                println("Not Enought")
+                k = true
                 break
+            end
+            if  (&)(ifelse.(dist .< 1.8,false,true)...) 
+                X = vcat(X,X_i')
+                max_val = Float64(findmax(dist)[1])
+                break
+            else
+                continue
             end
         end
         next!(p)
@@ -41,7 +46,7 @@ function sphere(R_agg, N, r_cell, x_o, y_o, z_o)
     return X
 end
 
-># HCP -> Hexagonal Close Packing
+# HCP -> Hexagonal Close Packing
 function Sphere_HCP(R_agg, R_Cell, x_o, y_o, z_o, digit = 2)
     """
     Parameters
