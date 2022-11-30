@@ -1,3 +1,7 @@
+function step(rmin, rmax, r)
+  return (sign(r-rmin)-sign(r-rmax))/2
+end
+
 function list_force_type(name)
 
     # General Parameters
@@ -5,32 +9,19 @@ function list_force_type(name)
     rₘₐₓ = (:rₘₐₓ)  ; rₘᵢₙ = (:rₘᵢₙ)
     rᵣ   = (:rᵣ)    ; α    = (:α) 
     n    = (:n)     ; p    = (:p)
-
     # Cubic Model
     if name == (:Cubic)
       var = (μ₁, rₘᵢₙ, rₘₐₓ)
       func = :(
-        force_func(p::$name, r) = ifelse.(
-          r .<= p.rₘₐₓ,
-          - p.μ₁ .* (r .- p.rₘₐₓ).^2 .* (r .- p.rₘᵢₙ),
-          0.0
-        )
+        force_func(p::$name, r) = - p.μ₁ .* (r .- p.rₘₐₓ).^2 .* (r .- p.rₘᵢₙ) .* step.(0, p.rₘₐₓ, r)
       )
       return var , func
     
     # GLS Model
-    elseif name == (:GLS)
-      var = (μ₁, rₘᵢₙ, rₘₐₓ, α)
+    elseif name == (:LennardJones)
+      var = (μ₁, rₘᵢₙ, rₘₐₓ)
       func = :(
-        force_func(p::$name, r) = ifelse.(
-          r .<= p.rₘᵢₙ,  
-          - p.μ₁ .* log.(1 .+ r .- p.rₘᵢₙ),
-          ifelse(
-              r <= p.rₘₐₓ,
-              -p.μ₁ .* (r .- p.rₘᵢₙ) .* exp(-p.α .* (r .- p.rₘᵢₙ)),
-              0.0
-          )
-        )
+        force_func(p::$name, r) = 4 .* p.μ₁ .* ((p.rₘᵢₙ ./ r).^12 .-  (p.rₘᵢₙ ./ r).^6) .* step.(0, p.rₘₐₓ, r)
       )
       return var, func
       

@@ -88,12 +88,12 @@ function fusion(store, m::Model, p::F, Agg) where F <: ForceType
 
     # Positioning two Aggregates
     Size = Float32(
-        (findmax(Agg.Position.X[:,1])[1] - findmin(Agg.Position.X[:,1])[1])/2 + 1
+        findmax(Agg.Position.X[:,1])[1] - findmin(Agg.Position.X[:,1])[1]
     ) 
 
     m.Geometry.position = [
-        -Size 0 0;
-        Size  0 0
+        -((Size/2)+1)  0  0;
+          (Size/2)+1   0  0
     ]
 
     # Fusioning the selected spheres
