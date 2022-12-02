@@ -2,6 +2,10 @@ using CUDA
 
 abstract type ForceType          end
 abstract type ModelParameter     end
+struct Point{T}
+    x::T
+    y::T
+end
 
 # Making for Forces and Struct
 #################################################################################
@@ -11,12 +15,12 @@ macro make_struct_func(name)
 
     # Generating Variables
     variables, force_func = list_force_type(name)
-    params=[:($v::$(Symbol("Float64"))) for v in variables]
+    params=[:($v::T) for v in variables]
 
     # Generating Macro
     selected = quote
         # Generating Struct
-        Base.@kwdef mutable struct $name <: ForceType
+        Base.@kwdef mutable struct $name{T} <: ForceType
         $(params...)
         end
         # Generating ForceFunc
@@ -31,24 +35,25 @@ end
 #################################################################################
 ############################## Model Parameters #################################
 #################################################################################
-Base.@kwdef mutable struct Contractile <: ModelParameter
-    fₚ       :: Float64 
+Base.@kwdef mutable struct Contractile{T} <: ModelParameter
+    fₚ          :: T 
 end
 Base.@kwdef mutable struct Time        <: ModelParameter
-    t_f      :: Float64
-    dt       :: Float64
+    t_f         :: Float64
+    dt          :: Float64
 end 
 Base.@kwdef mutable struct Neighbor    <: ModelParameter
-    n_knn    :: Int64
-    nn       :: Int64
+    n_knn       :: Int64
+    nn          :: Int64
 end
 Base.@kwdef mutable struct Geometry    <: ModelParameter
-    R_agg    :: Float64
-    position :: Matrix
+    R_agg       :: Float64
+    position    :: Matrix
 end
 Base.@kwdef mutable struct Simulation  <: ModelParameter
-    n_text   :: Int64
-    path     :: String
+    n_text      :: Int64
+    path        :: String
+    name_cell   :: String
 end
 Base.@kwdef mutable struct Model
     Force       :: ForceType
@@ -85,7 +90,7 @@ Base.@kwdef mutable struct PositionCell
     X   :: CuOrFloat
     dX  :: CuOrFloat
     function PositionCell(p)
-        new(p, zeros(size(p)[1],3)|>cu)
+        new(p, zeros(size(p))|>cu)
     end
 end
 

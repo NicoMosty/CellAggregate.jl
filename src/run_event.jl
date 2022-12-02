@@ -17,7 +17,7 @@ function cpu_simulate(X, dt, t, t_knn, args...)
     return X
 end
 
-function simulate(SAVING::Bool, m::Model, p::F, Agg::Aggregate) where F <: ForceType
+function simulate(Path::String, SAVING::Bool, m::Model, c::Contractile, Agg::Aggregate)
     # Definig Variables for calculing initial variables
     global Agg
 
@@ -28,7 +28,7 @@ function simulate(SAVING::Bool, m::Model, p::F, Agg::Aggregate) where F <: Force
         # Saving data in a given time (n_text)
         if mod(Agg.t, Int(m.Time.t_f/m.Time.dt/m.Simulation.n_text)) == 0 && SAVING
             X_w = Matrix(Agg.Position.X)
-            open(m.Simulation.path, "a") do f
+            open(Path, "a") do f
                 write(f, "$(size(Agg.Position.X, 1))\n")
                 write(f, "t=$(Agg.t)\n")
                 writedlm(f,hcat(repeat([1.0],size(Agg.Position.X, 1)), X_w), ' ')
@@ -52,7 +52,7 @@ function simulate(SAVING::Bool, m::Model, p::F, Agg::Aggregate) where F <: Force
                         ),1),:]
             end
             # Calculating Forces
-            cui_force(m.Time, m.Contractile, Agg)
+            cu_force(m.Time, c, Agg)
         else
             Agg.Position.X = Agg.Position.X + Agg.Position.dX * m.Time.dt
         end
@@ -67,24 +67,24 @@ function simulate(SAVING::Bool, m::Model, p::F, Agg::Aggregate) where F <: Force
     );
 end
 
-function one_aggregate(SAVING::Bool, m::Model, p::F, Agg::Aggregate) where F <: ForceType
+function one_aggregate(Path::String,SAVING::Bool, m::Model, c::Contractile, Agg::Aggregate)
     # Definig Variables for calculing initial variables
     global Agg
 
     # Running Forces Function
     println("Finding Equilibrium in one Aggregate")
-    simulate(SAVING, m, p, Agg)
+    simulate(Path, SAVING, m, c, Agg)
 
     return
 end
 
-function fusion(store, m::Model, p::F, Agg) where F <: ForceType
+function fusion(Path::String,SAVING::Bool, m::Model, c::Contractile, Agg::Aggregate)
     # Defining Variables for calculing the fusion
     global Agg
 
     # Running for One Aggregate
     println("Finding Equilibrium in one Aggregate")
-    simulate(false, m, p, Agg)
+    simulate(Path, false, m, c, Agg)
 
     # Positioning two Aggregates
     Size = Float32(
@@ -101,6 +101,6 @@ function fusion(store, m::Model, p::F, Agg) where F <: ForceType
     
     # Running Forces Function
     println("Finding Equilibrium in two Aggregate")
-    simulate(store, m, p, Agg)
+    simulate(Path, SAVING, m, c, Agg)
     return 
 end
