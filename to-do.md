@@ -12,5 +12,3 @@
 * Change Euler to another method
   * RK
   * Heun
-
-# Prueba en Asus
