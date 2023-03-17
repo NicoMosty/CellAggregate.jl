@@ -194,7 +194,7 @@
 # end
 
 ################################ NEW ####################################
-include("forces_func.jl")
+include("forces/forces_func.jl")
 
 abstract type ForceType          end
 abstract type ModelParameter     end
@@ -264,7 +264,7 @@ Base.@kwdef mutable struct PositionAgg
     X   :: CuOrFloat
     dX  :: CuOrFloat
     function PositionAgg(p)
-        new(p|>cu, zeros(size(p))|>cu)
+        new(p, zeros(size(p))|>cu)
     end
 end
 Base.@kwdef mutable struct IndexCell{T}
@@ -292,7 +292,7 @@ Base.@kwdef mutable struct Aggregate
     Neighbor          :: NeighborAgg
     Force             :: ForceAgg
 
-    function Aggregate(t::Float64,mod::ModelPar,force::ForceType,contractile::ContractilePar)
+function Aggregate(t::Float64,mod::ModelPar,pos,force::ForceType,contractile::ContractilePar)
         
         t = 0.0
 
@@ -302,8 +302,9 @@ Base.@kwdef mutable struct Aggregate
                  3.80 < force.rₘₐₓ ≤ 4.00 ? 55 :
                  70
 
-        # Declaring One Aggregate
-        pos = Float64.(readdlm(mod.SimulationPar.path_input*"/$(mod.GeometryPar.r_agg).xyz")[3:end,2:end])
+        # init pos and find fixed radius
+        pos = Matrix(pos)
+        mod.GeometryPar.r_agg = find_radius(pos)
 
         # Finding INdex for Aggregates
         ind = IndexCell(
@@ -326,7 +327,7 @@ Base.@kwdef mutable struct Aggregate
         repeat(mod.GeometryPar.position, inner=(size(pos,1),1))
 
         # Updating Data inside Struct
-        pos = PositionAgg(pos)
+        pos = PositionAgg(pos|>cu)
 
         # Declaring Neighbor matrix
         ne = NeighborAgg(
@@ -345,3 +346,6 @@ Base.@kwdef mutable struct Aggregate
         new(t,mod,force,contractile,pos,ind,ne,fo)
     end
 end
+
+# Adding Aggregates Functions
+include("functions/aggregate_functions.jl")
