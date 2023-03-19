@@ -1,3 +1,135 @@
+include("forces/forces_func.jl")
+
+abstract type ForceType          end
+CuOrFloat = Union{CuArray, Float64}
+CuOrInt   = Union{CuArray, Int64}
+
+#################################################################################
+############################## Making Forces Struct #############################
+#################################################################################
+
+macro make_struct_func(name)
+
+    # Generating Variables
+    variables, force_func = list_force_type(name)
+    params=[:($v::T) for v in variables]
+  
+    # Generating Macro
+    selected = quote
+        # Generating Struct
+        Base.@kwdef mutable struct $name{T} <: ForceType
+        $(params...)
+        end
+        # Generating ForceFunc
+        $(force_func)
+    end
+  
+    # Generating Struct & ForceFunc
+    return esc(:($selected))
+  
+  end
+#################################################################################
+######################## Interaction Parameters Struct ##########################
+#################################################################################
+Base.@kwdef mutable struct ContractilePar
+    fₚ           :: Float64
+end
+Base.@kwdef mutable struct InteractionPar
+    Force        :: ForceType
+    Contractile  :: ContractilePar
+end
+#################################################################################
+############################## Model Parameters #################################
+#################################################################################
+Base.@kwdef mutable struct TimeModel
+    tₛᵢₘ        :: Float64
+    dt          :: Float64
+    nₖₙₙ        :: Int64
+    nₛₐᵥₑ       :: Int64
+end 
+Base.@kwdef mutable struct InputModel
+    outer_ratio :: Float64
+    path_input  :: String
+end 
+Base.@kwdef mutable struct ModelSet
+    Time        :: TimeModel
+    Input       :: InputModel
+end
+
+#################################################################################
+############################ Aggregate Parameters ###############################
+#################################################################################
+Base.@kwdef mutable struct Aggregate
+    Name    
+    Position
+    Interaction :: InteractionPar
+    Radius      :: Float64
+    Outline
+    function Aggregate(name, pos, interaction::InteractionPar, mod::ModelSet) 
+        # init pos and find fixed radius
+        pos = Matrix(pos)
+        radius = find_radius(pos)
+        # Binary value that evaluate the outer cells vs inner cells on each aggregate
+        outline = 
+            ifelse.(
+                [euclidean(pos,i) for i=1:size(pos,1)] .> mod.Input.outer_ratio*radius,
+                1,0
+            )
+        new(name, pos,interaction,radius,outline)
+    end
+end
+
+# VecAggregate=Union{Vector{Aggregate},Matrix{Aggregate}}
+Base.@kwdef mutable struct AllAggregates
+    AggType
+    AggTypeIdx
+    AggIdx
+    Position
+    Outline
+    function AllAggregates(aggtype, location)
+
+        move     = hcat([location[i][2] for i=1:size(location,1)]...)'
+        name_idx = vcat([[location[i][1]] for i=1:size(location,1)]...)
+
+        agg_type     = permutedims(
+                                    hcat([[
+                                        i,
+                                        aggtype[i].Name,
+                                        aggtype[i].Radius,
+                                        aggtype[i].Interaction
+                                    ] for i=1:size(aggtype,1)]...)
+                    )
+
+        position = aggtype[agg_type[:,2] .== name_idx[1]][1].Position
+        position += repeat(move[1,:]',size(position,1))
+
+        outline = aggtype[agg_type[:,2] .== name_idx[1]][1].Outline
+        agg_idx = repeat([1 name_idx[1]], size(position,1))
+
+        for i = 2:size(name_idx,1)
+            pos_i = aggtype[agg_type[:,2] .== name_idx[i]][1].Position
+            pos_i += repeat(move[i,:]',size(pos_i,1))
+
+            outline_i = aggtype[agg_type[:,2] .== name_idx[i]][1].Outline
+            
+            position  = vcat(position,pos_i)
+            outline   = vcat(outline,outline_i)
+
+            agg_idx  = vcat(agg_idx,repeat([i name_idx[i]], size(pos_i,1)))
+        end
+
+        agg_type_idx = vcat([agg_type[:,1:2][agg_type[:,1:2][:,2] .== x,1] for x=agg_idx[:,2]]...)
+        agg_type_idx = hcat(agg_type_idx,agg_idx[:,2])
+
+        new(agg_type, agg_type_idx, agg_idx ,position, outline)
+    end
+end
+
+# Adding Aggregates Functions
+include("functions/aggregate_functions.jl")
+
+# <----------------------------------------------- REVIEW THIS
+################################ OLD ####################################
 # struct Point{T}
 #     x::T
 #     y::T
@@ -122,140 +254,3 @@
 #     idx_sum         :: CuOrFloat
 #     idx_cont        :: CuOrFloat
 # end
-
-################################ NEW ####################################
-include("forces/forces_func.jl")
-
-abstract type ForceType          end
-CuOrFloat = Union{CuArray, Float64}
-CuOrInt   = Union{CuArray, Int64}
-
-#################################################################################
-############################## Making Forces Struct #############################
-#################################################################################
-
-macro make_struct_func(name)
-
-    # Generating Variables
-    variables, force_func = list_force_type(name)
-    params=[:($v::T) for v in variables]
-  
-    # Generating Macro
-    selected = quote
-        # Generating Struct
-        Base.@kwdef mutable struct $name{T} <: ForceType
-        $(params...)
-        end
-        # Generating ForceFunc
-        $(force_func)
-    end
-  
-    # Generating Struct & ForceFunc
-    return esc(:($selected))
-  
-  end
-
-#################################################################################
-############################## Model Parameters #################################
-#################################################################################
-Base.@kwdef mutable struct TimePar
-    t_f         :: Float64
-    dt          :: Float64
-    n_knn       :: Int64
-    n_text      :: Int64
-end 
-Base.@kwdef mutable struct GeometryPar
-    outer_ratio :: Float64
-end
-Base.@kwdef mutable struct InputPar
-    path_input  :: String
-end
-Base.@kwdef mutable struct ModelPar
-    Time     :: TimePar
-    Geometry :: GeometryPar  
-    Input    :: InputPar
-end
-
-#################################################################################
-############################ Aggregate Parameters ###############################
-#################################################################################
-Base.@kwdef mutable struct ContractilePar{T}
-    fₚ              :: T 
-end
-Base.@kwdef mutable struct InteractionPar
-    ForcePar       :: ForceType
-    Contractile    :: ContractilePar
-end
-
-Base.@kwdef mutable struct ForceAgg
-    F       :: CuOrFloat
-end
-
-Base.@kwdef mutable struct Aggregate
-    Name    
-    Position
-    Interaction :: InteractionPar
-    Radius      :: Float64
-    Outline
-    function Aggregate(name, pos, interaction::InteractionPar, mod::ModelPar) 
-        # init pos and find fixed radius
-        pos = Matrix(pos)
-        radius = find_radius(pos)
-        # Binary value that evaluate the outer cells vs inner cells on each aggregate
-        outline = 
-            ifelse.(
-                [euclidean(pos,i) for i=1:size(pos,1)] .> mod.Geometry.outer_ratio*radius,
-                1,0
-            )
-        new(name, pos,interaction,radius,outline)
-    end
-end
-
-# VecAggregate=Union{Vector{Aggregate},Matrix{Aggregate}}
-Base.@kwdef mutable struct AllAggregates
-    AggType
-    AggTypeIdx
-    AggIdx
-    Position
-    Outline
-    function AllAggregates(aggtype, location)
-
-        move     = hcat([location[i][2] for i=1:size(location,1)]...)'
-        name_idx = vcat([[location[i][1]] for i=1:size(location,1)]...)
-
-        agg_type     = permutedims(
-                                    hcat([[
-                                        i,
-                                        aggtype[i].Name,
-                                        aggtype[i].Radius,
-                                        aggtype[i].Interaction
-                                    ] for i=1:size(aggtype,1)]...)
-                    )
-
-        position = aggtype[agg_type[:,2] .== name_idx[1]][1].Position
-        position += repeat(move[1,:]',size(position,1))
-
-        outline = aggtype[agg_type[:,2] .== name_idx[1]][1].Outline
-        agg_idx = repeat([1 name_idx[1]], size(position,1))
-
-        for i = 2:size(name_idx,1)
-            pos_i = aggtype[agg_type[:,2] .== name_idx[i]][1].Position
-            pos_i += repeat(move[i,:]',size(pos_i,1))
-
-            outline_i = aggtype[agg_type[:,2] .== name_idx[i]][1].Outline
-            
-            position  = vcat(position,pos_i)
-            outline   = vcat(outline,outline_i)
-
-            agg_idx  = vcat(agg_idx,repeat([i name_idx[i]], size(pos_i,1)))
-        end
-
-        agg_type_idx = vcat([agg_type[:,1:2][agg_type[:,1:2][:,2] .== x,1] for x=agg_idx[:,2]]...)
-        agg_type_idx = hcat(agg_type_idx,agg_idx[:,2])
-
-        new(agg_type, agg_type_idx, agg_idx ,position, outline)
-    end
-end
-
-# Adding Aggregates Functions
-include("functions/aggregate_functions.jl")
