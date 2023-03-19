@@ -38,45 +38,47 @@ function show_all_aggregates(all_agg::AllAggregates)
     println("Outer/Total = $(sum(all_agg.Outline)/size(all_agg.Position,1))")
 end
 
-function position_mod(position::Matrix,mod::ModelPar)
-    return ModelPar(
-        mod.TimePar, mod.NeighborPar,
-        GeometryPar(
-            mod.GeometryPar.r_agg,
-            position,
-            mod.GeometryPar.outer_ratio
-        ),
-        mod.SimulationPar
+function fusion_agg(agg::Aggregate)
+    fusion_agg =  AllAggregates(
+        [agg],
+        [
+            [agg.Name,[-agg.Radius ,0 ,0]],
+            [agg.Name,[ agg.Radius ,0 ,0]]
+        ]
     )
+    return fusion_agg
 end
 
-# Declaring the Aggregate for the first time
-function OneAgg(mod::ModelPar, force::ForceType,contractile::ContractilePar)
-    init_pos = Float64.(readdlm(mod.SimulationPar.path_input*"/$(mod.GeometryPar.r_agg).xyz")[3:end,2:end])
-    return Aggregate(0.0,position_mod([0 0 0],mod),init_pos,force,contractile)
-end
 
-function FusionAgg(agg::Aggregate,mod::ModelPar, force::ForceType,contractile::ContractilePar)
-    init_pos = Matrix(agg.Position.X)
-    init_position = position_mod(
-        [-agg.Model.GeometryPar.r_agg 0 0;
-          agg.Model.GeometryPar.r_agg 0 0],
-        mod
-    )
-    agg=Nothing
-    return Aggregate(
-        0.0,
-        init_position,
-        init_pos,force,contractile
-    )
-end
+# <----------------------------------------------- REVIEW THIS
+################################ OLD ####################################
+# # Declaring the Aggregate for the first time
+# function OneAgg(mod::ModelPar, force::ForceType,contractile::ContractilePar)
+#     init_pos = Float64.(readdlm(mod.SimulationPar.path_input*"/$(mod.GeometryPar.r_agg).xyz")[3:end,2:end])
+#     return Aggregate(0.0,position_mod([0 0 0],mod),init_pos,force,contractile)
+# end
 
-function MoreAgg(agg::Aggregate,mod::ModelPar, force::ForceType,contractile::ContractilePar)
-    init_pos = Matrix(agg.Position.X)
-    agg=Nothing
-    return Aggregate(0.0,mod,init_pos,force,contractile)
-end
-function MoreAgg(mod::ModelPar, force::ForceType,contractile::ContractilePar)
-    init_pos = Float64.(readdlm(mod.SimulationPar.path_input*"/$(mod.GeometryPar.r_agg).xyz")[3:end,2:end])
-    return Aggregate(0.0,mod,init_pos,force,contractile)
-end
+# function FusionAgg(agg::Aggregate,mod::ModelPar, force::ForceType,contractile::ContractilePar)
+#     init_pos = Matrix(agg.Position.X)
+#     init_position = position_mod(
+#         [-agg.Model.GeometryPar.r_agg 0 0;
+#           agg.Model.GeometryPar.r_agg 0 0],
+#         mod
+#     )
+#     agg=Nothing
+#     return Aggregate(
+#         0.0,
+#         init_position,
+#         init_pos,force,contractile
+#     )
+# end
+
+# function MoreAgg(agg::Aggregate,mod::ModelPar, force::ForceType,contractile::ContractilePar)
+#     init_pos = Matrix(agg.Position.X)
+#     agg=Nothing
+#     return Aggregate(0.0,mod,init_pos,force,contractile)
+# end
+# function MoreAgg(mod::ModelPar, force::ForceType,contractile::ContractilePar)
+#     init_pos = Float64.(readdlm(mod.SimulationPar.path_input*"/$(mod.GeometryPar.r_agg).xyz")[3:end,2:end])
+#     return Aggregate(0.0,mod,init_pos,force,contractile)
+# end
