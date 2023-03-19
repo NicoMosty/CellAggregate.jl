@@ -24,6 +24,20 @@ function show_agg(agg::Aggregate)
     println("Outer/Total = $(sum(agg.Index.Outline)/size(agg.Position.X,1))")
 end
 
+function show_all_aggregates(all_agg::AllAggregates)
+    println("===================== AggType ======================")
+    display(all_agg.AggType)
+    println("=================== AggTypeIdx =====================")
+    display(all_agg.AggTypeIdx)
+    println("===================== AggIdx ======================")
+    display(all_agg.AggIdx)
+    println("===================== Position ======================")
+    display(all_agg.Position)
+    println("===================== Outline ======================")
+    display(all_agg.Outline)
+    println("Outer/Total = $(sum(all_agg.Outline)/size(all_agg.Position,1))")
+end
+
 function position_mod(position::Matrix,mod::ModelPar)
     return ModelPar(
         mod.TimePar, mod.NeighborPar,
