@@ -11,6 +11,9 @@ function find_radius(X::Matrix)
     return sum([abs(minimum(X[:,i])-maximum(X[:,i]))/2 for i=1:size(X,2)])/size(X,2)+1
 end
 
+# Convert GPU to CPU
+GPUtoCPU(var) = typeof(var) <: CuArray ? Matrix(var) : var
+CPUtoGPU(comp, var) = typeof(comp) <: CuArray ? var |> cu : var
 
 # <----------------------------------------------- REVIEW THIS
 ################################ OLD ####################################
