@@ -60,30 +60,39 @@ end
 ############################ Aggregate Parameters ###############################
 #################################################################################
 Base.@kwdef mutable struct Aggregate
-    Name    
-    Position
-    Interaction :: InteractionPar
+    Name        :: String
     Radius      :: Float64
-    Outline
-    function Aggregate(name, pos, interaction::InteractionPar, mod::ModelSet) 
+    Interaction :: InteractionPar
+    Position    
+    Outline     
+
+    # function Aggregate{X,Y}(name,interaction,pos,mod) where {X<:MatOrCu,Y<:MatOrCu}
+    function Aggregate(name::String,interaction::InteractionPar,pos,mod::ModelSet)
+        
         # init pos and find fixed radius
-        pos = Matrix(pos)
-        radius = find_radius(pos)
+        pos_i = GPUtoCPU(pos)
+        radius = find_radius(pos_i)
+
         # Binary value that evaluate the outer cells vs inner cells on each aggregate
         outline = 
             ifelse.(
-                [euclidean(pos,i) for i=1:size(pos,1)] .> mod.Input.outer_ratio*radius,
+                [euclidean(pos_i,i) for i=1:size(pos_i,1)] .> mod.Input.outer_ratio*radius,
                 1,0
             )
-        new(name, pos,interaction,radius,outline)
+        new(name,radius,interaction,pos,outline)
     end
+end
+
+Base.@kwdef mutable struct IndexAggregate
+    IdxList
+    IdxAgg
+    IdxName
 end
 
 # VecAggregate=Union{Vector{Aggregate},Matrix{Aggregate}}
 Base.@kwdef mutable struct AllAggregates
-    AggType
-    AggTypeIdx
-    AggIdx
+    AggList
+    Index    :: IndexAggregate
     Position
     Outline
     function AllAggregates(aggtype, location)
@@ -91,7 +100,7 @@ Base.@kwdef mutable struct AllAggregates
         move     = hcat([location[i][2] for i=1:size(location,1)]...)'
         name_idx = vcat([[location[i][1]] for i=1:size(location,1)]...)
 
-        agg_type     = permutedims(
+        agg_list     = permutedims(
                                     hcat([[
                                         i,
                                         aggtype[i].Name,
@@ -100,33 +109,80 @@ Base.@kwdef mutable struct AllAggregates
                                     ] for i=1:size(aggtype,1)]...)
                     )
 
-        position = aggtype[agg_type[:,2] .== name_idx[1]][1].Position
+        position = GPUtoCPU(aggtype[agg_list[:,2] .== name_idx[1]][1].Position)
         position += repeat(move[1,:]',size(position,1))
 
-        outline = aggtype[agg_type[:,2] .== name_idx[1]][1].Outline
-        agg_idx = repeat([1 name_idx[1]], size(position,1))
+        outline = aggtype[agg_list[:,2] .== name_idx[1]][1].Outline
+        idx_name = repeat([name_idx[1]], size(position,1))
+        idx_agg = repeat([1], size(position,1))
 
         for i = 2:size(name_idx,1)
-            pos_i = aggtype[agg_type[:,2] .== name_idx[i]][1].Position
+            pos_i = GPUtoCPU(aggtype[agg_list[:,2] .== name_idx[i]][1].Position)
             pos_i += repeat(move[i,:]',size(pos_i,1))
 
-            outline_i = aggtype[agg_type[:,2] .== name_idx[i]][1].Outline
+            outline_i = aggtype[agg_list[:,2] .== name_idx[i]][1].Outline
             
             position  = vcat(position,pos_i)
             outline   = vcat(outline,outline_i)
 
-            agg_idx  = vcat(agg_idx,repeat([i name_idx[i]], size(pos_i,1)))
+            idx_name  = vcat(idx_name,repeat([name_idx[i]], size(pos_i,1)))
+            idx_agg   = vcat(idx_agg,repeat([i], size(pos_i,1)))
         end
 
-        agg_type_idx = vcat([agg_type[:,1:2][agg_type[:,1:2][:,2] .== x,1] for x=agg_idx[:,2]]...)
-        agg_type_idx = hcat(agg_type_idx,agg_idx[:,2])
+        idx_list = vcat([agg_list[:,1:2][agg_list[:,1:2][:,2] .== x,1] for x=idx_name]...)
 
-        new(agg_type, agg_type_idx, agg_idx ,position, outline)
+        # Updating to type of data required
+        type_position = aggtype[1].Position
+        position = CPUtoGPU(type_position,position)
+        idx_list = CPUtoGPU(type_position,Int.(idx_list))
+        idx_agg  = CPUtoGPU(type_position,Int.(idx_agg))
+
+        new(agg_list, IndexAggregate(idx_list,idx_agg,idx_name),position, outline)
     end
 end
 
 # Adding Aggregates Functions
 include("functions/aggregate_functions.jl")
+
+#################################################################################
+############################ Simulation Parameters ##############################
+#################################################################################
+
+Base.@kwdef mutable struct NeighborCell
+    idx
+    idx_red
+    idx_sum
+    idx_cont
+end
+Base.@kwdef mutable struct ForceCell
+    dX
+    F
+end
+Base.@kwdef mutable struct SimulationSet
+    Neighbor :: NeighborCell
+    Force    :: ForceCell
+    function SimulationSet(aggs::AllAggregates, model::ModelSet)
+        max_rₘₐₓ = max([aggs.AggList[i,4].Force.rₘₐₓ for i=1:size(aggs.AggList,1)]...)
+        
+        idx_red_size =  max_rₘₐₓ ≤ 2.80 ? 13 :
+                 2.80 < max_rₘₐₓ ≤ 3.45 ? 21 :
+                 3.45 < max_rₘₐₓ ≤ 3.80 ? 39 :
+                 3.80 < max_rₘₐₓ ≤ 4.00 ? 55 :
+                 70
+
+        neighbor_cell = NeighborCell(
+            idx      = CPUtoGPU(aggs.Position, zeros(size(aggs.Position,1), size(aggs.Position,1))),
+            idx_red  = CPUtoGPU(aggs.Position, zeros(idx_red_size, size(aggs.Position,1))),
+            idx_sum  = CPUtoGPU(aggs.Position, zeros(1,size(aggs.Position,1))),
+            idx_cont = CPUtoGPU(aggs.Position, zeros(model.Time.nₖₙₙ,size(aggs.Position,1)))
+        )
+        force_cell = ForceCell(
+            dX       = CPUtoGPU(aggs.Position, zeros(size(aggs.Position))),
+            F        = CPUtoGPU(aggs.Position, zeros(size(aggs.Position)))
+        )
+        new(neighbor_cell, force_cell)
+    end
+end
 
 # <----------------------------------------------- REVIEW THIS
 ################################ OLD ####################################
