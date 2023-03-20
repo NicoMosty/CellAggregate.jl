@@ -141,9 +141,6 @@ Base.@kwdef mutable struct AllAggregates
     end
 end
 
-# Adding Aggregates Functions
-include("functions/aggregate_functions.jl")
-
 #################################################################################
 ############################ Simulation Parameters ##############################
 #################################################################################
@@ -183,6 +180,9 @@ Base.@kwdef mutable struct SimulationSet
         new(neighbor_cell, force_cell)
     end
 end
+
+# Adding Aggregates Functions
+include("functions/aggregate_functions.jl")
 
 # <----------------------------------------------- REVIEW THIS
 ################################ OLD ####################################
