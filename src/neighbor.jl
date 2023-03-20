@@ -52,9 +52,6 @@
 # end
 
 ################################ NEW ####################################
-
-using CUDA
-
 function dist_kernel!(idx, points,r_max)
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     j = (blockIdx().y - 1) * blockDim().y + threadIdx().y
