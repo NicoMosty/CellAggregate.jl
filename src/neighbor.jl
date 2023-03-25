@@ -1,3 +1,67 @@
+function dist_kernel!(idx, points,type_idx,r_max)
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    j = (blockIdx().y - 1) * blockDim().y + threadIdx().y
+    
+    if i <= size(points, 1) && j <= size(points, 1)
+        if euclidean(points,i,j) < r_max[type_idx[j]]
+            idx[i, j] = i
+        else
+            idx[i, j] = 0
+        end 
+    end
+    return nothing
+end
+
+function reduce_kernel(idx,idx_red,idx_sum)
+    i  = (blockIdx().x-1) * blockDim().x + threadIdx().x
+
+    if i <= size(idx,1)
+        idx_sum[i] = 0
+
+        for j = 1:size(idx,1)
+            if idx[j,i] != 0
+                idx_sum[i] += 1
+                idx_red[idx_sum[i],i] = j
+            end
+        end
+    end
+    
+    return nothing
+end
+
+function index_contractile!(idx_contractile,idx_sum,idx_red)
+    # Defining Index for kernel
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    j = (blockIdx().y - 1) * blockDim().y + threadIdx().y
+
+    # Limiting data inside matrix
+    if i <= size(idx_contractile, 1) && j <= size(idx_contractile,2)
+        idx_contractile[i,j] = idx_red[rand(1:idx_sum[j]),j]
+    end
+    return nothing
+end
+
+function nearest_neighbors(agg::Aggregate)
+    # Calculating Distance Matrix
+    threads =(32,32)
+    blocks  =cld.(size(agg.Position,1),threads)
+    println("Threads = $(threads) | Blocks  = $(blocks)")
+    @cuda threads=threads blocks=blocks dist_kernel!(agg.Simulation.Neighbor.idx, agg.Position ,agg.Index.Type,agg.Matrix.rₘₐₓ)
+
+    # Reducing Distance Matrix to Nearest Neighbors
+    threads = 256
+    blocks  =cld.(size(agg.Position,1),threads)
+    println("Threads = $(threads) | Blocks  = $(blocks)")
+    @cuda threads=threads blocks=blocks reduce_kernel(agg.Simulation.Neighbor.idx, agg.Simulation.Neighbor.idx_red, agg.Simulation.Neighbor.idx_sum)
+
+    # Finding index contractile
+    threads = (32,32)
+    blocks  =cld.(size(agg.Position,1),threads)
+    println("Threads = $(threads) | Blocks  = $(blocks)")
+    @cuda threads=threads blocks=blocks index_contractile!(agg.Simulation.Neighbor.idx_cont,agg.Simulation.Neighbor.idx_sum,agg.Simulation.Neighbor.idx_red)
+end
+
+################################ NEW ####################################
 # using CUDA
 # using NearestNeighbors
 
@@ -50,62 +114,3 @@
 #     end
 #     synchronize()
 # end
-
-################################ NEW ####################################
-function dist_kernel!(idx, points,r_max)
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
-    j = (blockIdx().y - 1) * blockDim().y + threadIdx().y
-    
-    if i <= size(points, 1) && j <= size(points, 1)
-        if euclidean(points,i,j) < r_max
-            idx[i, j] = i
-        else
-            idx[i, j] = 0
-        end 
-    end
-    return nothing
-end
-
-function reduce_kernel(idx,idx_red,idx_sum)
-    i  = (blockIdx().x-1) * blockDim().x + threadIdx().x
-
-    if i <= size(idx,1)
-        for j = 1:size(idx,1)
-            if idx[j,i] != 0
-                idx_sum[i] += 1
-                idx_red[idx_sum[i],i] = j
-            end
-        end
-    end
-    
-    return nothing
-end
-
-function index_contractile!(idx_contractile,idx_sum,idx_red)
-    # Defining Index for kernel
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
-    j = (blockIdx().y - 1) * blockDim().y + threadIdx().y
-
-    # Limiting data inside matrix
-    if i <= size(idx_contractile, 1) && j <= size(idx_contractile,2)
-        idx_contractile[i,j] = idx_red[rand(1:idx_sum[j]),j]
-    end
-    return nothing
-end
-
-function nearest_neighbors(idx, idx_red, idx_sum, idx_contractile, points ,r_max)
-    # Calculating Distance Matrix
-    threads =(32,32)
-    blocks  =cld.(size(points,1),threads)
-    @cuda threads=threads blocks=blocks dist_kernel!(idx, points ,r_max)
-
-    # Reducing Distance Matrix to Nearest Neighbors
-    threads=1024
-    blocks=cld.(size(idx,1),threads)
-    @cuda threads=threads blocks=blocks reduce_kernel(idx,idx_red,idx_sum)
-
-    # Finding index contractile
-    threads =(32,32)
-    blocks  =cld.(size(X,1),threads)
-    @cuda threads=threads blocks=blocks index_contractile!(idx_contractile,idx_sum,idx_red)
-end
