@@ -12,9 +12,22 @@ function find_radius(X::Matrix)
 end
 
 # Convert GPU to CPU
-GPUtoCPU(var) = typeof(var) <: CuArray ? Matrix(var) : var
-CPUtoGPU(comp, var) = typeof(comp) <: CuArray ? var |> cu : var
+CPUtoGPU(comp, var) = comp <: CuArray ? var |> cu : var
 
+#=
+---------------------------------------- Struct -----------------------------------
+=#
+
+# Filter a property from a source with a location struct
+filter_prop(source,loc,property::String) = [getproperty(source[loc[i].Name .== getproperty.(source,:Name)][1],Symbol(property)) for i=1:size(loc,1)]
+index_prop(source,loc) = [findfirst(x -> x == loc[i].Name, getproperty.(source,:Name)) for i=1:size(loc,1)]
+
+# Repeat a property from a source with a location struct
+repeat_prop(position, prop) = vcat([repeat([prop[i]], size(position[i],1)) for i=1:size(position,1)]...)
+repeat_prop(position) = vcat([repeat([i], size(position[i],1)) for i=1:size(position,1)]...)
+
+# Extract Data from a Struct
+ExtractData(tipo) = [getproperty(tipo,fieldnames(typeof(tipo))[i]) for i=1:size(fieldnames(typeof(tipo)),1)]
 # <----------------------------------------------- REVIEW THIS
 ################################ OLD ####################################
 # # Step Fuctions
