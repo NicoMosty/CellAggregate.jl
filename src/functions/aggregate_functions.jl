@@ -1,71 +1,59 @@
 function show_aggregates(agg::Aggregate)
-    println("------------------ Agg Properties -------------------")
-    println("Name    = $(agg.Name)")
-    println("Radius  = $(agg.Radius)")
-    dump(agg.Interaction)
-    println("--------------------- Position ----------------------")
-    display(agg.Position)
-    println("--------------------- Outline -----------------------")
-    display(agg.Outline')
-    println("Outer/Total = $(sum(agg.Outline)/size(agg.Position,1))")
-end
-
-function show_aggregates(all_agg::AllAggregates)
-    println("---------------- Aggs Type List ---------------------")
-    display(all_agg.AggList)
-    println("------------------- Aggs Index ----------------------")
+    println("========================= Type =======================")
+    display(agg.Type)
+    println("======================= Matrix ======================")
+    println("Type")
+    display(agg.Matrix.Type)
+    println("Property")
+    display(agg.Matrix.Property)
+    println("rₘₐₓ_position")
+    display(agg.Matrix.rₘₐₓ)
+    println("======================   Index =======================")
     println("Index of List of Aggregates")
-    display(permutedims(all_agg.Index.IdxList))
+    display(permutedims(agg.Index.Type))
     println("Index of Number of Aggregates")
-    display(permutedims(all_agg.Index.IdxAgg))
+    display(permutedims(agg.Index.Agg))
     println("Index of Name of Aggregates")
-    display(permutedims(all_agg.Index.IdxName))
-    println("--------------------- Position ----------------------")
-    display(all_agg.Position)
-    println("--------------------- Outline -----------------------")
-    display(all_agg.Outline')
-    println("Outer/Total = $(sum(all_agg.Outline)/size(all_agg.Position,1))")
+    display(permutedims(agg.Index.Name))
+    println("====================== Position =====================")
+    display(agg.Position)
+    println("======================== Geometry ===================")
+    println("Radius_agg")
+    display(permutedims(agg.Geometry.radius_agg))
+    println("Outline")
+    display(permutedims(agg.Geometry.outline))
+    println("Outer/Total = $(sum(agg.Geometry.outline)/size(agg.Position,1))")
+    println("====================== Simulation ===================")
+    println("------------------ Neighbors Size -------------------")
+    println("idx      = $(size(agg.Simulation.Neighbor.idx))")
+    println("idx_red  = $(size(agg.Simulation.Neighbor.idx_red))")
+    println("idx_sum  = $(size(agg.Simulation.Neighbor.idx_sum))")
+    println("idx_cont = $(size(agg.Simulation.Neighbor.idx_cont))")
+    println("------------------- Forces Size ---------------------")
+    println("dX       = $(size(agg.Simulation.Force.dX))")
+    println("F        = $(size(agg.Simulation.Force.F))")
 end
 
-function show_simulation_set(sim::SimulationSet)
-    println("============== Type of Matrix =============")
-    println("$(typeof(sim.Neighbor.idx))")
-    println("========== Neighbors Matrix Size ==========")
-    println("idx      = $(size(sim.Neighbor.idx))")
-    println("idx_red  = $(size(sim.Neighbor.idx_red))")
-    println("idx_sum  = $(size(sim.Neighbor.idx_sum))")
-    println("idx_cont = $(size(sim.Neighbor.idx_cont))")
-    println("============ Forces Matrix Size ===========")
-    println("dX       = $(size(sim.Force.dX))")
-    println("F       = $(size(sim.Force.F))")
-end
-
-function fusion_agg(agg::Aggregate)
-    fusion_agg =  AllAggregates(
-        [agg],
-        [
-            [agg.Name,[-agg.Radius ,0 ,0]],
-            [agg.Name,[ agg.Radius ,0 ,0]]
-        ]
-    )
+function FusionAggregate(init_set, model) 
+    radius_loc = getproperty.(init_set,:Radius)
+    if size(init_set, 1) == 1
+        fusion_agg = Aggregate(
+            init_set,
+            [
+                AggLocation(init_set[1].Name,[-radius_loc[1] 0  0]),
+                AggLocation(init_set[1].Name,[ radius_loc[1] 0  0])
+            ],
+            Model
+        )
+    else
+        fusion_agg = Aggregate(
+            init_set,
+            [
+                AggLocation(init_set[1].Name,[-radius_loc[1] 0  0]),
+                AggLocation(init_set[2].Name,[ radius_loc[2] 0  0])
+            ],
+            Model
+        )
+    end
     return fusion_agg
 end
-
-
-# <----------------------------------------------- REVIEW THIS
-################################ OLD ####################################
-# # Declaring the Aggregate for the first time
-# function OneAgg(mod::ModelPar, force::ForceType,contractile::ContractilePar)
-#     init_pos = Float64.(readdlm(mod.SimulationPar.path_input*"/$(mod.GeometryPar.r_agg).xyz")[3:end,2:end])
-#     return Aggregate(0.0,position_mod([0 0 0],mod),init_pos,force,contractile)
-# end
-
-# function MoreAgg(agg::Aggregate,mod::ModelPar, force::ForceType,contractile::ContractilePar)
-#     init_pos = Matrix(agg.Position.X)
-#     agg=Nothing
-#     return Aggregate(0.0,mod,init_pos,force,contractile)
-# end
-# function MoreAgg(mod::ModelPar, force::ForceType,contractile::ContractilePar)
-#     init_pos = Float64.(readdlm(mod.SimulationPar.path_input*"/$(mod.GeometryPar.r_agg).xyz")[3:end,2:end])
-#     return Aggregate(0.0,mod,init_pos,force,contractile)
-# end
