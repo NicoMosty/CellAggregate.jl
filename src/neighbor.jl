@@ -46,7 +46,7 @@ function nearest_neighbors(agg::Aggregate)
     threads =(32,32)
     blocks  =cld.(size(agg.Position,1),threads)
     println("Threads = $(threads) | Blocks  = $(blocks)")
-    @cuda threads=threads blocks=blocks dist_kernel!(agg.Simulation.Neighbor.idx, agg.Position ,agg.Index.Type,agg.Matrix.rₘₐₓ)
+    @cuda threads=threads blocks=blocks dist_kernel!(agg.Simulation.Neighbor.idx, agg.Position ,agg.Index.Type,agg.Simulation.Parameter.rₘₐₓ)
 
     # Reducing Distance Matrix to Nearest Neighbors
     threads = 256
