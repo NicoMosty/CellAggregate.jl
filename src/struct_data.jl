@@ -54,6 +54,11 @@ end
 Base.@kwdef mutable struct ModelSet
     Time        :: TimeModel
     Input       :: InputModel
+    ForceType
+    function ModelSet(time,input)
+        force_type = hcat([collect(1:size(subtypes(ForceType),1)), subtypes(ForceType)]...)
+        new(time, input, force_type)
+    end
 end
 
 ################################################################################
@@ -88,6 +93,7 @@ Base.@kwdef mutable struct AggIndex
     Type
     Agg
     Name
+    ForceType
 end
 
 Base.@kwdef mutable struct AggGeometry
@@ -104,14 +110,20 @@ Base.@kwdef mutable struct AggForce
     F
     dX
 end
+Base.@kwdef mutable struct AggParameter
+    rₘₐₓ
+    Force
+    Contractile
+    Radius
+end
 Base.@kwdef mutable struct AggSimulation
-    Neighbor :: AggNeighbor
-    Force    :: AggForce
+    Parameter :: AggParameter
+    Neighbor  :: AggNeighbor
+    Force     :: AggForce
 end
 
 Base.@kwdef mutable struct Aggregate
     Type  
-    Matrix
     Index
     Position
     Geometry
@@ -120,34 +132,17 @@ Base.@kwdef mutable struct Aggregate
     function Aggregate(agg_type, location, model)
         datatype = unique([agg_type[i].Type for i=1:size(agg_type,1)])[1]
 
-        matrix_type = CPUtoGPU(datatype,
-                vcat(
-                    [vcat(
-                    ExtractData(agg_type[i].Interaction.Force),
-                    ExtractData(agg_type[i].Interaction.Contractile),
-                    agg_type[i].Radius)' for i=1:size(agg_type,1)
-                ]...)
-            )
-        matrix_position = vcat(
-                [fieldnames(typeof(agg_type[1].Interaction.Force))...],
-                [fieldnames(typeof(agg_type[1].Interaction.Contractile))...],
-                [:Radius]...
-            )
-        matrix_rₘₐₓ = matrix_type[:,findfirst(x -> x == :rₘₐₓ, matrix_position)]
-        matrix = AggMatrix(matrix_type, matrix_position, matrix_rₘₐₓ)
-
         # Filtering differents properties by the location
         pos_loc = filter_prop(agg_type,location,"Position")
         radius_loc = filter_prop(agg_type,location,"Radius")
         type_loc = index_prop(agg_type,location)
         name_loc = filter_prop(agg_type,location,"Name")
+        interaction_loc = filter_prop(agg_type,location,"Interaction")
+        forcetype_loc = typeof.(getproperty.(interaction_loc, :Force))
         loc = getproperty.(location,:Location)
 
-
         pos = vcat(pos_loc...)
-
         radius = repeat_prop(pos_loc, radius_loc)
-
         geometry = AggGeometry(
             radius,
             ifelse.(
@@ -156,10 +151,12 @@ Base.@kwdef mutable struct Aggregate
             )
         )
 
+        forcetype_idx = vcat(sum([model.ForceType[i,1]*[forcetype_loc .<: model.ForceType[i,2]] for i=1:size(model.ForceType,1)])...)
         index = AggIndex(
             CPUtoGPU(datatype,Int.(repeat_prop(pos_loc, type_loc))),
             CPUtoGPU(datatype,Int.(repeat_prop(pos_loc))),
-            repeat_prop(pos_loc, name_loc)
+            repeat_prop(pos_loc, name_loc),
+            CPUtoGPU(datatype,repeat_prop(pos_loc, forcetype_idx))
         )
 
         # Updating to type of data required
@@ -174,6 +171,12 @@ Base.@kwdef mutable struct Aggregate
                 3.80 < max_rₘₐₓ ≤ 4.00 ? 55 :
                 70
 
+        agg_parameter = AggParameter(
+            CPUtoGPU(datatype,[agg_type[i].Interaction.Force.rₘₐₓ for i=1:size(agg_type,1)]),
+            CPUtoGPU(datatype,vcat([ExtractData(agg_type[i].Interaction.Force)' for i=1:size(agg_type,1)]...)),
+            CPUtoGPU(datatype,vcat([ExtractData(agg_type[i].Interaction.Contractile)' for i=1:size(agg_type,1)]...)),
+            CPUtoGPU(datatype,vcat([agg_type[i].Radius' for i=1:size(agg_type,1)]...))
+        )
         neighbor_cell = AggNeighbor(
             idx      = CPUtoGPU(datatype, zeros(size(pos,1), size(pos,1))),
             idx_red  = CPUtoGPU(datatype, zeros(idx_red_size, size(pos,1))),
@@ -185,9 +188,9 @@ Base.@kwdef mutable struct Aggregate
             dX       = CPUtoGPU(datatype, zeros(size(pos))),
             F        = CPUtoGPU(datatype, zeros(size(pos)))
         )
-        simulation = AggSimulation(neighbor_cell,force_cell)
+        simulation = AggSimulation(agg_parameter, neighbor_cell,force_cell)
 
-        new(agg_type, matrix,index, pos, geometry, simulation)
+        new(agg_type,index, pos, geometry, simulation)
     end
 end
 
