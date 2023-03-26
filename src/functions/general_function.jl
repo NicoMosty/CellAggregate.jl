@@ -15,6 +15,12 @@ end
 CPUtoGPU(comp, var) = comp <: CuArray ? var |> cu : var
 
 #=
+------------------------------------ ForceType as Index ---------------------------------
+=#
+
+forcetype(idx,property...) = subtypes(ForceType)[idx](property...)
+
+#=
 ---------------------------------------- Struct -----------------------------------
 =#
 
