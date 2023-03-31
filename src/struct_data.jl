@@ -178,10 +178,10 @@ Base.@kwdef mutable struct Aggregate
             CPUtoGPU(datatype,vcat([agg_type[i].Radius' for i=1:size(agg_type,1)]...))
         )
         neighbor_cell = AggNeighbor(
-            idx      = CPUtoGPU(datatype, zeros(size(pos,1), size(pos,1))),
-            idx_red  = CPUtoGPU(datatype, zeros(idx_red_size, size(pos,1))),
+            idx      = CPUtoGPU(datatype, Int.(zeros(size(pos,1), size(pos,1)))),
+            idx_red  = CPUtoGPU(datatype, Int.(zeros(idx_red_size, size(pos,1)))),
             idx_sum  = CPUtoGPU(datatype, Int.(zeros(1,size(pos,1)))),
-            idx_cont = CPUtoGPU(datatype, zeros(model.Time.nₖₙₙ,size(pos,1)))
+            idx_cont = CPUtoGPU(datatype, Int.(zeros(model.Time.nₖₙₙ,size(pos,1))))
         )
         
         force_cell = AggForce(
