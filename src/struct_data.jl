@@ -1,38 +1,12 @@
 include("forces/forces_func.jl")
-
-abstract type ForceType          end
 CuOrFloat = Union{CuArray, Float64}
 CuOrInt   = Union{CuArray, Int64}
 
 #################################################################################
-############################## Making Forces Struct #############################
-#################################################################################
-
-macro make_struct_func(name)
-
-    # Generating Variables
-    variables, force_func = list_force_type(name)
-    params=[:($v::T) for v in variables]
-  
-    # Generating Macro
-    selected = quote
-        # Generating Struct
-        Base.@kwdef mutable struct $name{T} <: ForceType
-        $(params...)
-        end
-        # Generating ForceFunc
-        $(force_func)
-    end
-  
-    # Generating Struct & ForceFunc
-    return esc(:($selected))
-  
-  end
-#################################################################################
 ######################## Interaction Parameters Struct ##########################
 #################################################################################
 Base.@kwdef mutable struct ContractilePar
-    fₚ           :: Float64
+    fₚ           
 end
 Base.@kwdef mutable struct InteractionPar
     Force        :: ForceType
@@ -54,11 +28,6 @@ end
 Base.@kwdef mutable struct ModelSet
     Time        :: TimeModel
     Input       :: InputModel
-    ForceType
-    function ModelSet(time,input)
-        force_type = hcat([collect(1:size(subtypes(ForceType),1)), subtypes(ForceType)]...)
-        new(time, input, force_type)
-    end
 end
 
 ################################################################################
@@ -93,7 +62,6 @@ Base.@kwdef mutable struct AggIndex
     Type
     Agg
     Name
-    ForceType
 end
 
 Base.@kwdef mutable struct AggGeometry
@@ -111,7 +79,6 @@ Base.@kwdef mutable struct AggForce
     dX
 end
 Base.@kwdef mutable struct AggParameter
-    rₘₐₓ
     Force
     Contractile
     Radius
@@ -130,7 +97,8 @@ Base.@kwdef mutable struct Aggregate
     Simulation
 
     function Aggregate(agg_type, location, model)
-        datatype = unique([agg_type[i].Type for i=1:size(agg_type,1)])[1]
+        data_type = unique([agg_type[i].Type for i=1:size(agg_type,1)])[1]
+        force_type = eval(nameof(unique([typeof(agg_type[i].Interaction.Force) for i=1:size(agg_type,1)])[1]))
 
         # Filtering differents properties by the location
         pos_loc = filter_prop(agg_type,location,"Position")
@@ -138,7 +106,8 @@ Base.@kwdef mutable struct Aggregate
         type_loc = index_prop(agg_type,location)
         name_loc = filter_prop(agg_type,location,"Name")
         interaction_loc = filter_prop(agg_type,location,"Interaction")
-        forcetype_loc = typeof.(getproperty.(interaction_loc, :Force))
+        force_loc = getproperty.(interaction_loc, :Force)
+        contractile_loc = getproperty.(interaction_loc, :Contractile)
         loc = getproperty.(location,:Location)
 
         pos = vcat(pos_loc...)
@@ -151,17 +120,15 @@ Base.@kwdef mutable struct Aggregate
             )
         )
 
-        forcetype_idx = vcat(sum([model.ForceType[i,1]*[forcetype_loc .<: model.ForceType[i,2]] for i=1:size(model.ForceType,1)])...)
         index = AggIndex(
-            CPUtoGPU(datatype,Int.(repeat_prop(pos_loc, type_loc))),
-            CPUtoGPU(datatype,Int.(repeat_prop(pos_loc))),
-            repeat_prop(pos_loc, name_loc),
-            CPUtoGPU(datatype,repeat_prop(pos_loc, forcetype_idx))
+            CPUtoGPU(data_type,Int.(repeat_prop(pos_loc, type_loc))),
+            CPUtoGPU(data_type,Int.(repeat_prop(pos_loc))),
+            repeat_prop(pos_loc, name_loc)
         )
 
         # Updating to type of data required
         move = vcat([vcat(repeat(loc[i,:], inner=(1,size.(filter_prop(agg_type,location,"Position"),1)[i]))...) for i=1:size(loc,1)]...)
-        pos = CPUtoGPU(datatype,pos+move)
+        pos = CPUtoGPU(data_type,pos+move)
 
         max_rₘₐₓ = max([getproperty.(agg_type, :Interaction)[i].Force.rₘₐₓ for i=1:size(agg_type,1)]...)
 
@@ -172,21 +139,34 @@ Base.@kwdef mutable struct Aggregate
                 70
 
         agg_parameter = AggParameter(
-            CPUtoGPU(datatype,[agg_type[i].Interaction.Force.rₘₐₓ for i=1:size(agg_type,1)]),
-            CPUtoGPU(datatype,vcat([ExtractData(agg_type[i].Interaction.Force)' for i=1:size(agg_type,1)]...)),
-            CPUtoGPU(datatype,vcat([ExtractData(agg_type[i].Interaction.Contractile)' for i=1:size(agg_type,1)]...)),
-            CPUtoGPU(datatype,vcat([agg_type[i].Radius' for i=1:size(agg_type,1)]...))
+            force_type(
+                    [
+                    CPUtoGPU(data_type,repeat_prop(
+                        pos_loc,
+                        [getproperty(force_loc[i],fieldnames(force_type)[j]) 
+                            for i=1:size(location,1)]
+                    ))
+                    for j=1:size(fieldnames(force_type),1)
+                ]...
+            ),
+            ContractilePar(
+                CPUtoGPU(
+                    data_type,
+                    repeat_prop(pos_loc,[getproperty(contractile_loc[i],:fₚ) for i=1:size(location,1)])
+                )
+            ),
+            CPUtoGPU(data_type,vcat([agg_type[i].Radius' for i=1:size(agg_type,1)]...))
         )
         neighbor_cell = AggNeighbor(
-            idx      = CPUtoGPU(datatype, Int.(zeros(size(pos,1), size(pos,1)))),
-            idx_red  = CPUtoGPU(datatype, Int.(zeros(idx_red_size, size(pos,1)))),
-            idx_sum  = CPUtoGPU(datatype, Int.(zeros(1,size(pos,1)))),
-            idx_cont = CPUtoGPU(datatype, Int.(zeros(model.Time.nₖₙₙ,size(pos,1))))
+            idx      = CPUtoGPU(data_type, Int.(zeros(size(pos,1), size(pos,1)))),
+            idx_red  = CPUtoGPU(data_type, Int.(zeros(idx_red_size, size(pos,1)))),
+            idx_sum  = CPUtoGPU(data_type, Int.(zeros(1,size(pos,1)))),
+            idx_cont = CPUtoGPU(data_type, Int.(zeros(model.Time.nₖₙₙ,size(pos,1))))
         )
         
         force_cell = AggForce(
-            dX       = CPUtoGPU(datatype, zeros(size(pos))),
-            F        = CPUtoGPU(datatype, zeros(size(pos)))
+            dX       = CPUtoGPU(data_type, zeros(size(pos))),
+            F        = CPUtoGPU(data_type, zeros(size(pos)))
         )
         simulation = AggSimulation(agg_parameter, neighbor_cell,force_cell)
 
@@ -196,3 +176,30 @@ end
 
 # Adding Aggregates Functions
 include("functions/aggregate_functions.jl")
+
+# <----------------------------------------------------- THIS
+# review this
+#################################################################################
+############################## Making Forces Struct #############################
+#################################################################################
+
+# macro make_struct_func(name)
+
+#     # Generating Variables
+#     variables, force_func = list_force_type(name)
+#     params=[:($v::T) for v in variables]
+  
+#     # Generating Macro
+#     selected = quote
+#         # Generating Struct
+#         Base.@kwdef mutable struct $name{T} <: ForceType
+#         $(params...)
+#         end
+#         # Generating ForceFunc
+#         $(force_func)
+#     end
+  
+#     # Generating Struct & ForceFunc
+#     return esc(:($selected))
+  
+#   end
