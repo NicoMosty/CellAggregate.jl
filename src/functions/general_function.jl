@@ -1,5 +1,6 @@
 # Dependences
 using CUDA
+using Adapt
 using DelimitedFiles
 
 # Euclidean Distance
