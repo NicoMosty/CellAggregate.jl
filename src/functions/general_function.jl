@@ -35,6 +35,19 @@ repeat_prop(position) = vcat([repeat([i], size(position[i],1)) for i=1:size(posi
 
 # Extract Data from a Struct
 ExtractData(tipo) = [getproperty(tipo,fieldnames(typeof(tipo))[i]) for i=1:size(fieldnames(typeof(tipo)),1)]
+
+#=
+------------------------------------ Start Aggregates ------------------------------
+=#
+macro start_agg(variable)
+    reset   = "$(Symbol(variable.args[1])) = Nothing"
+    restart = "$(Symbol(variable.args[1])) = $(Symbol(variable.args[2]))"
+    run = quote
+            Meta.parse($reset)
+            Meta.parse($restart)
+        end
+    esc(eval(run))
+end
 # <----------------------------------------------- REVIEW THIS
 ################################ OLD ####################################
 # # Step Fuctions
