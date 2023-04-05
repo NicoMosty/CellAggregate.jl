@@ -1,4 +1,15 @@
+#################################################################################
+############################### ForceType Struct  ###############################
+#################################################################################
+
 include("forces/forces_func.jl")
+for j = subtypes(ForceType)
+  # Adapt Force Struct for CUDA
+  eval(Meta.parse("Adapt.@adapt_structure($(j))"))
+  # Generate fonce_func for one set of parameters
+  eval(Meta.parse("force_func(p::$(j),value) = force_func(p::$(j),1,value)"))
+end
+
 CuOrFloat = Union{CuArray, Float64}
 CuOrInt   = Union{CuArray, Int64}
 
@@ -176,30 +187,3 @@ end
 
 # Adding Aggregates Functions
 include("functions/aggregate_functions.jl")
-
-# <----------------------------------------------------- THIS
-# review this
-#################################################################################
-############################## Making Forces Struct #############################
-#################################################################################
-
-# macro make_struct_func(name)
-
-#     # Generating Variables
-#     variables, force_func = list_force_type(name)
-#     params=[:($v::T) for v in variables]
-  
-#     # Generating Macro
-#     selected = quote
-#         # Generating Struct
-#         Base.@kwdef mutable struct $name{T} <: ForceType
-#         $(params...)
-#         end
-#         # Generating ForceFunc
-#         $(force_func)
-#     end
-  
-#     # Generating Struct & ForceFunc
-#     return esc(:($selected))
-  
-#   end
