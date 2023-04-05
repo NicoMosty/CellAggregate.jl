@@ -1,26 +1,30 @@
 include("../functions/general_function.jl")
-
 abstract type ForceType end
 
 #=
 Use this symbols for new forces functions
-  μ₁   = (:μ₁)    ; μ₂   = (:μ₂) 
-  rₘₐₓ = (:rₘₐₓ)  ; rₘᵢₙ = (:rₘᵢₙ)
-  rᵣ   = (:rᵣ)    ; α    = (:α) 
-  n    = (:n)     ; p    = (:p)
+  μ₁   = First Force Parameter    
+  μ₂   = Second Force Parameter  
+  rₘₐₓ = Maximum Radius of Interaction (Cutoff)  
+  rₘᵢₙ = Minimum Radius of Interaction
+  rᵣ   = Check   
+  α    = Check
+  n    = Check    
+  p    = Check
 =#
 
-# Cubic
-Base.@kwdef mutable struct Cubic{T}  <: ForceType
+# Cubic Model
+Base.@kwdef struct Cubic{T}  <: ForceType
   μ₁ :: T;rₘᵢₙ :: T; rₘₐₓ :: T
 end
-force_func(p::Cubic, r) = - p.μ₁ * (r - p.rₘₐₓ)^2 * (r - p.rₘᵢₙ)
+force_func(p::Cubic, i, r) = - p.μ₁[i] * (r - p.rₘₐₓ[i])^2 * (r - p.rₘᵢₙ[i])
 
-# LennardJones
-Base.@kwdef mutable struct LennardJones{T}  <: ForceType
+# LennardJones Model
+Base.@kwdef struct LennardJones{T}  <: ForceType
   μ₁ :: T;rₘᵢₙ :: T; rₘₐₓ :: T
 end
-force_func(p::LennardJones, r) = 4 * p.μ₁ * ((p.rₘᵢₙ/r)^12 -  (p.rₘᵢₙ/r).^6)
+force_func(p::LennardJones,i ,r) = 4 * p.μ₁[i] * ((p.rₘᵢₙ[i]/r)^12 -  (p.rₘᵢₙ[i]/r).^6)
+
 
 # <----------------------------------------------------- THIS
 # review this
@@ -53,3 +57,30 @@ force_func(p::LennardJones, r) = 4 * p.μ₁ * ((p.rₘᵢₙ/r)^12 -  (p.rₘ�
 #   end
 
 # end
+
+# <----------------------------------------------------- THIS
+# review this
+#################################################################################
+############################## Making Forces Struct #############################
+#################################################################################
+
+# macro make_struct_func(name)
+
+#     # Generating Variables
+#     variables, force_func = list_force_type(name)
+#     params=[:($v::T) for v in variables]
+  
+#     # Generating Macro
+#     selected = quote
+#         # Generating Struct
+#         Base.@kwdef mutable struct $name{T} <: ForceType
+#         $(params...)
+#         end
+#         # Generating ForceFunc
+#         $(force_func)
+#     end
+  
+#     # Generating Struct & ForceFunc
+#     return esc(:($selected))
+  
+#   end
