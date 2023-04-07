@@ -1,3 +1,20 @@
+"""
+# Distance Matrix 
+This is a CUDA kernel function that computes the pairwise distances between points in a matrix points and sets the corresponding 
+element in an output matrix idx to the index of the first point if the distance between the two points is less than a given 
+maximum radius r_max, and to 0 otherwise.
+
+    The function takes the following arguments:
+    
+        • idx      : A matrix of size (n_points, n_points) to store the indices of the closest points for each point.
+        • points   : A matrix of size (n_points, n_dims) representing the coordinates of each point in space.
+        • type_idx : A vector of length n_points specifying the interaction value (rₘₐₓ) by the type of Aggregate.
+        • r_max    : A vector of length n_types specifying the maximum radius for each type of point.
+    
+    The function is executed on the GPU using CUDA and is designed to be called from a host function. 
+    The indices i and j are computed based on the thread indices and block indices. The euclidean function is assumed 
+    to compute the Euclidean distance between two points. The function returns nothing.
+"""
 function dist_kernel!(idx, points,type_idx,r_max)
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     j = (blockIdx().y - 1) * blockDim().y + threadIdx().y
@@ -12,6 +29,19 @@ function dist_kernel!(idx, points,type_idx,r_max)
     return nothing
 end
 
+"""
+# Reduce Kernel
+Reduce neighbor list using prefix sum algorithm.
+
+    The function takes the following arguments:
+
+        • idx     : CuArray{Int,2} : Neighbor list for all particles
+        • idx_red : CuArray{Int,2} : Reduced neighbor list for all particles
+        • idx_sum : CuArray{Int,1} : The start index of the neighbor list for each particle in idx_red
+
+    The function is executed on the GPU using CUDA and is designed to be called from a host function.
+
+"""
 function reduce_kernel(idx,idx_red,idx_sum)
     i  = (blockIdx().x-1) * blockDim().x + threadIdx().x
 
@@ -29,6 +59,19 @@ function reduce_kernel(idx,idx_red,idx_sum)
     return nothing
 end
 
+"""
+# Contractile Kernel
+Assigns random indices from a reduced index matrix to each entry in a matrix.
+
+    The function takes the following arguments:
+
+        • idx_contractile : CuArray{Int,2} : A matrix of size (n, m) where n is the number of simulation steps and m is the number of aggregates.
+        • idx_sum         : CuArray{Int,1} : A CUDA array of size (1, m) containing the sum of non-zero entries in each column of `idx_red`.
+        • idx_red         : CuArray{Int,2} : A CUDA array of size (n, m) containing the reduced index matrix.
+
+    The function is executed on the GPU using CUDA and is designed to be called from a host function.
+
+"""
 function index_contractile!(idx_contractile,idx_sum,idx_red)
     # Defining Index for kernel
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
@@ -41,6 +84,19 @@ function index_contractile!(idx_contractile,idx_sum,idx_red)
     return nothing
 end
 
+"""
+# Nearest Neighbor
+
+This function nearest_neighbors is a CUDA kernel implementation for calculating the nearest neighbors for a given aggregate (agg). 
+    The implementation is divided into three steps:
+
+        1. Calculating the distance matrix between all the points in the aggregate (agg.Position) and storing it in agg.Simulation.Neighbor.idx.
+        2. Reducing the distance matrix to obtain the nearest neighbors and storing it in agg.Simulation.Neighbor.idx_red.
+        3. Finding the index contractile for each point and storing it in agg.Simulation.Neighbor.idx_cont.
+
+    The kernel uses the dist_kernel! function to calculate the distance matrix between points, the reduce_kernel function to reduce the 
+    distance matrix to obtain the nearest neighbors, and the index_contractile! function to find the index contractile.
+"""
 function nearest_neighbors(agg::Aggregate)
     # Calculating Distance Matrix
     threads =(32,32)

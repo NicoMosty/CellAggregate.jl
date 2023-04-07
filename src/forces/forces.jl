@@ -1,3 +1,25 @@
+"""
+# sum_force
+This function computes the sum of the forces acting on each point in a set of points. The force on a point is computed by iterating over each other 
+point and calculating the force according to some force function. Additionally, a contractile force is added between each point and its nearest 
+neighbor. 
+    
+    The inputs to the function are:
+
+        • idx       : An array of indices indicating which points are neighbors of each other point.
+        • idx_cont  : An array of indices indicating the nearest neighbor of each point.
+        • points    : An array of the positions of the points.
+        • force     : An array to store the computed forces.
+        • force_par : Parameters for the force function.
+        • cont_par  : Parameters for the contractile force.
+        • t_knn     : Time index for the nearest neighbor calculation.
+
+The function uses CUDA to parallelize the computation across multiple threads and blocks. The function defines two indices (i and k) 
+to keep track of the point and the dimension being computed. Inside the kernel, the function computes the force on each point by iterating 
+over each other point and checking if it is a neighbor. If it is a neighbor, it calculates the force according to some force function and adds 
+it to the total force on the point. After iterating over all neighbors, the function adds a contractile force between the point and its nearest neighbor.
+Finally, the function writes the computed force to the output array force.
+"""
 function sum_force!(idx,idx_cont,points,force,force_par,cont_par,t_knn)
     # Defining Index for kernel
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
@@ -31,6 +53,15 @@ function sum_force!(idx,idx_cont,points,force,force_par,cont_par,t_knn)
     return nothing
 end
 
+"""
+# cu_force
+
+Compute the forces between each pair of particles in `agg`.
+
+    The inputs to the function are:
+        • agg   : Aggregate : The aggregate for which to compute the forces.
+        • t_knn : int       : The time step at which to apply the contractile force.
+"""
 function cu_force(agg::Aggregate,t_knn)
     # GPU requirements
     threads =(100,3)

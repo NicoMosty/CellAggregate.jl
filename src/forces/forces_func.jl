@@ -1,17 +1,28 @@
+"""
+This script defines an abstract type ForceType and two concrete types Cubic and LennardJones or another 
+defined by the user.
+
+  The script also includes a set of symbols to use as variable names for force function parameters. 
+  These symbols are:
+  
+      μ₁: First force parameter
+      μ₂: Second force parameter
+      rₘₐₓ: Maximum radius of interaction (cutoff)
+      rₘᵢₙ: Minimum radius of interaction
+      rᵣ: Check
+      α: Check
+      n: Check
+      p: Check
+  
+  The Cubic type has three fields, μ₁, rₘᵢₙ, and rₘₐₓ, and the LennardJones type has the same fields.
+  
+  The force_func function is defined for both types and takes in a Cubic or LennardJones struct, 
+  an index i, and a distance r between two particles. The function calculates the force using the specified 
+  force formula for each type.
+"""
+
 include("../functions/general_function.jl")
 abstract type ForceType end
-
-#=
-Use this symbols for new forces functions
-  μ₁   = First Force Parameter    
-  μ₂   = Second Force Parameter  
-  rₘₐₓ = Maximum Radius of Interaction (Cutoff)  
-  rₘᵢₙ = Minimum Radius of Interaction
-  rᵣ   = Check   
-  α    = Check
-  n    = Check    
-  p    = Check
-=#
 
 # Cubic Model
 Base.@kwdef struct Cubic{T}  <: ForceType
