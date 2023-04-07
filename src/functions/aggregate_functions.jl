@@ -1,3 +1,12 @@
+"""
+The show_aggregates function takes an agg object of type Aggregate and displays its properties and attributes.
+
+The displayed information includes the type of aggregate, the index of the list of aggregates, the index of the 
+number of aggregates, and the index of the name of aggregates. It also displays the position, geometry, and simulation 
+parameters of the aggregate. In addition, it displays the size of the neighbor and force matrices.
+    
+Overall, the function provides a comprehensive summary of the properties and attributes of the agg object.
+"""
 function show_aggregates(agg::Aggregate)
     println("========================= Type =======================")
     display(agg.Type)
@@ -35,6 +44,14 @@ function show_aggregates(agg::Aggregate)
     println("F        = $(size(agg.Simulation.Force.F))")
 end
 
+"""
+This function takes two arguments, init_set and model, and returns a new Aggregate struct that is a fusion of the 
+aggregates in init_set. If init_set contains only one aggregate, it creates a new Aggregate struct with two 
+locations that are separated by the radius of the aggregate along the x-axis. If init_set contains two aggregates, 
+it creates a new Aggregate struct with two locations that are separated by the radii of the two aggregates along the x-axis. 
+    
+The model argument is the simulation model to use for the new Aggregate struct.
+"""
 function FusionAggregate(init_set, model) 
     radius_loc = getproperty.(init_set,:Radius)
     if size(init_set, 1) == 1
@@ -57,4 +74,68 @@ function FusionAggregate(init_set, model)
         )
     end
     return fusion_agg
+end
+
+#================================== SAVING DATA FUNCTIONS ====================================#
+"""
+    full_path(a::AbstractString, b::AbstractString)
+
+Concatenates two input paths, `a` and `b`, to form a full path. If `a` is an empty string, the function returns `b` as the full path; otherwise, it concatenates `a`, "/", and `b` to form the full path.
+
+Parameters:
+- `a`: The first path component as a string.
+- `b`: The second path component as a string.
+
+Returns:
+- A string that is the full path formed by concatenating `a` and `b`.
+
+Example:
+```julia
+julia> full_path("usr", "local")
+"usr/local"
+
+julia> full_path("", "usr/local")
+"usr/local"
+"""
+full_path(a,b) = a == "" ? b : a*"/"*b 
+
+"""
+    # save_append_data(agg::Aggregate, time, Path, Name)
+
+    Save the position of the aggregates in an Aggregate object to an XYZ file
+    (appending) with the specified name and path.
+
+    Parameters:
+    - agg: An Aggregate struct representing the aggregates
+    - time: The current time (in any units)
+    - Path: A string representing the path where the file will be saved
+    - Name: A string representing the name of the file (without extension)
+"""
+function save_append_data(agg::Aggregate, time, Path, Name)
+    open(full_path(Path,Name)*".xyz", "a") do f
+        write(f, "$(size(agg.Position, 1))\n")
+        write(f, "t=$(t)\n")
+        writedlm(f,Matrix(hcat(agg.Geometry.outline,agg.Position)), ' ')
+    end
+end
+
+"""
+    # save_data(agg::Aggregate, time, Path, Name)
+
+    Save the position of the aggregates in an Aggregate object to an XYZ file 
+    (new or overwritting) with the specified name and path.
+
+    Parameters:
+    - agg: An Aggregate struct representing the aggregates
+    - time: The current time (in any units)
+    - Path: A string representing the path where the file will be saved
+    - Name: A string representing the name of the file (without extension)
+"""
+function save_data(agg::Aggregate, time, Path, Name)
+
+    open(full_path(Path,Name)*".xyz", "w") do f
+        write(f, "$(size(agg.Position, 1))\n")
+        write(f, "t=$(time)\n")
+        writedlm(f,Matrix(hcat(agg.Geometry.outline,agg.Position)), ' ')
+    end
 end
