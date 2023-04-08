@@ -114,7 +114,7 @@ full_path(a,b) = a == "" ? b : a*"/"*b
 function save_append_data(agg::Aggregate, time, Path, Name)
     open(full_path(Path,Name)*".xyz", "a") do f
         write(f, "$(size(agg.Position, 1))\n")
-        write(f, "t=$(t)\n")
+        write(f, "t=$(time)\n")
         writedlm(f,Matrix(hcat(agg.Geometry.outline,agg.Position)), ' ')
     end
 end
