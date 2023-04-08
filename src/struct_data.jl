@@ -175,12 +175,17 @@ Base.@kwdef mutable struct TimeModel
     nₛₐᵥₑ       :: Int64
 end 
 Base.@kwdef mutable struct InputModel
-    outer_ratio :: Float64
-    path_input  :: String
+    outer_ratio     :: Float64
+    path_input      :: String
+end 
+Base.@kwdef mutable struct OutputModel
+    name_output      :: String
+    path_output      :: String
 end 
 Base.@kwdef mutable struct ModelSet
     Time        :: TimeModel
     Input       :: InputModel
+    Output
 end
 
 
