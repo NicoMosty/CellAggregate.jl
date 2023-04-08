@@ -18,9 +18,10 @@ The function uses CUDA to parallelize the computation across multiple threads an
 to keep track of the point and the dimension being computed. Inside the kernel, the function computes the force on each point by iterating 
 over each other point and checking if it is a neighbor. If it is a neighbor, it calculates the force according to some force function and adds 
 it to the total force on the point. After iterating over all neighbors, the function adds a contractile force between the point and its nearest neighbor.
-Finally, the function writes the computed force to the output array force.
+The function writes the computed force to the output array force. Finally, the position of each point is updated based on the total force acting on that 
+point and the time step.
 """
-function sum_force!(idx,idx_cont,points,force,force_par,cont_par,t_knn)
+function sum_force!(idx,idx_cont,points,force,force_par,cont_par,dt,t_knn)
     # Defining Index for kernel
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     k = (blockIdx().y - 1) * blockDim().y + threadIdx().y
@@ -48,6 +49,24 @@ function sum_force!(idx,idx_cont,points,force,force_par,cont_par,t_knn)
             dist = euclidean(points,i,idx_cont[t_knn,i])
             force[i,k] += cont_par[i]*(points[i,k]-points[idx_cont[t_knn,i],k])/dist
         end
+
+        # # Summing dX on the position of the aggregate on a specific dt
+        # points[i,k] += force[i,k] * dt
+        
+    end
+    return nothing
+end
+
+function sum_position!(points,force,dt)
+    # Defining Index for kernel
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    k = (blockIdx().y - 1) * blockDim().y + threadIdx().y
+
+    # Limiting data inside matrix
+    if i <= size(points, 1) && k <= size(points, 2)
+
+        # Summing dX on the position of the aggregate on a specific dt
+        points[i,k] += force[i,k] * dt
         
     end
     return nothing
@@ -56,18 +75,19 @@ end
 """
 # cu_force
 
-Compute the forces between each pair of particles in `agg`.
+Compute the forces between each pair of particles in `agg` and their displacement.
 
     The inputs to the function are:
         • agg   : Aggregate : The aggregate for which to compute the forces.
+        • model : ModelSet  : The model for the simulation of aggregates.
         • t_knn : int       : The time step at which to apply the contractile force.
 """
-function cu_force(agg::Aggregate,t_knn)
+function cu_force(agg::Aggregate,model::ModelSet,t_knn)
     # GPU requirements
-    threads =(100,3)
+    threads =(128,3)
     blocks  =(cld.(size(agg.Position,1)+1,threads[1]),1)
 
-    # Running GPU kernel
+    # Running GPU for calculing force
     @cuda threads=threads blocks=blocks sum_force!(
         agg.Simulation.Neighbor.idx_red,
         agg.Simulation.Neighbor.idx_cont,
@@ -75,8 +95,17 @@ function cu_force(agg::Aggregate,t_knn)
         agg.Simulation.Force.F,
         agg.Simulation.Parameter.Force,
         agg.Simulation.Parameter.Contractile.fₚ,
+        model.Time.dt,
         Int(t_knn)
     )
+
+    # Running GPU for calculing displacement
+    @cuda threads=threads blocks=blocks sum_position!(
+        agg.Position,
+        agg.Simulation.Force.F,
+        model.Time.dt
+    )
+
 end
 
 ################################ NEW ####################################
