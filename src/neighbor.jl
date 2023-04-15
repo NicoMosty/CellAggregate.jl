@@ -15,17 +15,18 @@ maximum radius r_max, and to 0 otherwise.
     The indices i and j are computed based on the thread indices and block indices. The euclidean function is assumed 
     to compute the Euclidean distance between two points. The function returns nothing.
 """
-function dist_kernel!(idx, points,type_idx,r_max)
+function dist_kernel!(idx, points,r_max)
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     j = (blockIdx().y - 1) * blockDim().y + threadIdx().y
     
     if i <= size(points, 1) && j <= size(points, 1)
-        if euclidean(points,i,j) < r_max[type_idx[j]]
-            idx[i, j] = i
+        if euclidean(points,i,j) < r_max[j]
+            idx[j,i] = j
         else
-            idx[i, j] = 0
+            idx[j,i] = 0
         end 
     end
+    sync_threads()
     return nothing
 end
 
@@ -42,7 +43,7 @@ Reduce neighbor list using prefix sum algorithm.
     The function is executed on the GPU using CUDA and is designed to be called from a host function.
 
 """
-function reduce_kernel(idx,idx_red,idx_sum)
+function reduce_kernel!(idx,idx_red,idx_sum)
     i  = (blockIdx().x-1) * blockDim().x + threadIdx().x
 
     if i <= size(idx,1)
@@ -55,7 +56,7 @@ function reduce_kernel(idx,idx_red,idx_sum)
             end
         end
     end
-    
+    sync_threads()
     return nothing
 end
 
@@ -81,6 +82,7 @@ function index_contractile!(idx_contractile,idx_sum,idx_red)
     if i <= size(idx_contractile, 1) && j <= size(idx_contractile,2)
         idx_contractile[i,j] = idx_red[rand(1:idx_sum[j]),j]
     end
+    sync_threads()
     return nothing
 end
 
@@ -99,17 +101,17 @@ This function nearest_neighbors is a CUDA kernel implementation for calculating 
 """
 function nearest_neighbors(agg::Aggregate)
     # Calculating Distance Matrix
-    threads =(32,32)
+    threads =(8,8)
     blocks  =cld.(size(agg.Position,1),threads)
     @cuda threads=threads blocks=blocks dist_kernel!(agg.Simulation.Neighbor.idx, agg.Position ,agg.Index.Type,agg.Simulation.Parameter.Force.rₘₐₓ)
 
     # Reducing Distance Matrix to Nearest Neighbors
-    threads = 256
+    threads = 64
     blocks  =cld.(size(agg.Position,1),threads)
     @cuda threads=threads blocks=blocks reduce_kernel(agg.Simulation.Neighbor.idx, agg.Simulation.Neighbor.idx_red, agg.Simulation.Neighbor.idx_sum)
 
     # Finding index contractile
-    threads = (32,32)
+    threads = (8,8)
     blocks  =cld.(size(agg.Position,1),threads)
     @cuda threads=threads blocks=blocks index_contractile!(agg.Simulation.Neighbor.idx_cont,agg.Simulation.Neighbor.idx_sum,agg.Simulation.Neighbor.idx_red)
 end

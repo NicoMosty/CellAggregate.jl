@@ -534,10 +534,10 @@ Base.@kwdef mutable struct Aggregate
                               the number of time steps. This attribute is used to store the indices of the contacting neighbors at each time step.
         """
         neighbor_cell = AggNeighbor(
-            idx      = CPUtoGPU(data_type, Int.(zeros(size(pos,1), size(pos,1)))),
-            idx_red  = CPUtoGPU(data_type, Int.(zeros(idx_red_size, size(pos,1)))),
-            idx_sum  = CPUtoGPU(data_type, Int.(zeros(1,size(pos,1)))),
-            idx_cont = CPUtoGPU(data_type, Int.(zeros(model.Time.nₖₙₙ,size(pos,1))))
+            idx      = CPUtoGPU(data_type, Int32.(zeros(size(pos,1), size(pos,1)))),
+            idx_red  = CPUtoGPU(data_type, Int32.(zeros(idx_red_size, size(pos,1)))),
+            idx_sum  = CPUtoGPU(data_type, Int32.(zeros(1,size(pos,1)))),
+            idx_cont = CPUtoGPU(data_type, Int32.(zeros(model.Time.nₖₙₙ,size(pos,1))))
         )
 
         """

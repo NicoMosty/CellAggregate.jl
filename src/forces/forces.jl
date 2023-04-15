@@ -21,7 +21,7 @@ it to the total force on the point. After iterating over all neighbors, the func
 The function writes the computed force to the output array force. Finally, the position of each point is updated based on the total force acting on that 
 point and the time step.
 """
-function sum_force!(idx,idx_cont,points,force,force_par,cont_par,dt,t_knn)
+function sum_force!(idx,points,force,force_par,dt)
     # Defining Index for kernel
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     k = (blockIdx().y - 1) * blockDim().y + threadIdx().y
@@ -39,38 +39,40 @@ function sum_force!(idx,idx_cont,points,force,force_par,cont_par,dt,t_knn)
             # Finding forces
             if idx[j,i] != i && idx[j,i] != 0
                 dist = euclidean(points,i,idx[j,i])
-                force[i,k] += force_func(force_par,i,dist) * (points[i,k]-points[idx[j,i],k]) / dist
+                # <---------------------------- [THIS]
+                force[i,k] += force_func(force_par,i,dist) * (points[i,k]-points[idx[j,i],k])/dist
+                sync_threads()
             end
-            
         end
-
-        # Adding Contrractile Force
-        if idx_cont[t_knn,i] != i && idx_cont[t_knn,i] != 0
-            dist = euclidean(points,i,idx_cont[t_knn,i])
-            force[i,k] += cont_par[i]*(points[i,k]-points[idx_cont[t_knn,i],k])/dist
-        end
-
-        # # Summing dX on the position of the aggregate on a specific dt
-        # points[i,k] += force[i,k] * dt
-        
-    end
-    return nothing
-end
-
-function sum_position!(points,force,dt)
-    # Defining Index for kernel
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
-    k = (blockIdx().y - 1) * blockDim().y + threadIdx().y
-
-    # Limiting data inside matrix
-    if i <= size(points, 1) && k <= size(points, 2)
 
         # Summing dX on the position of the aggregate on a specific dt
-        points[i,k] += force[i,k] * dt
+        points[i,k] = points[i,k] + force[i,k]
         
     end
     return nothing
 end
+
+# function sum_contractile!(idx_cont,points,force,cont_par,dt,t_knn)
+#     # Defining Index for kernel
+#     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+#     k = (blockIdx().y - 1) * blockDim().y + threadIdx().y
+
+#     # Limiting data inside matrix
+#     if i <= size(points, 1) && k <= size(points, 2)
+
+#         # Adding Contractile Force
+#         if idx_cont[t_knn,i] != i
+#             dist = euclidean(points,i,idx_cont[t_knn,i])
+#             force[i,k] += cont_par[i]*(points[i,k]-points[idx_cont[t_knn,i],k])/dist
+#         end
+    
+#     end
+
+#     # Summing dX on the position of the aggregate on a specific dt
+#     points[i,k] = points[i,k] + force[i,k] * dt
+
+#     return nothing
+# end
 
 """
 # cu_force
@@ -84,28 +86,17 @@ Compute the forces between each pair of particles in `agg` and their displacemen
 """
 function cu_force(agg::Aggregate,model::ModelSet,t_knn)
     # GPU requirements
-    threads =(128,3)
+    threads =(16,3)
     blocks  =(cld.(size(agg.Position,1)+1,threads[1]),1)
 
     # Running GPU for calculing force
     @cuda threads=threads blocks=blocks sum_force!(
         agg.Simulation.Neighbor.idx_red,
-        agg.Simulation.Neighbor.idx_cont,
         agg.Position,
         agg.Simulation.Force.F,
         agg.Simulation.Parameter.Force,
-        agg.Simulation.Parameter.Contractile.fₚ,
-        model.Time.dt,
-        Int(t_knn)
-    )
-
-    # Running GPU for calculing displacement
-    @cuda threads=threads blocks=blocks sum_position!(
-        agg.Position,
-        agg.Simulation.Force.F,
         model.Time.dt
     )
-
 end
 
 ################################ NEW ####################################
