@@ -112,10 +112,11 @@ full_path(a,b) = a == "" ? b : a*"/"*b
     - Name: A string representing the name of the file (without extension)
 """
 function save_append_data(agg::Aggregate, time, Path, Name)
+    pos = Matrix(agg.Position)
     open(full_path(Path,Name)*".xyz", "a") do f
         write(f, "$(size(agg.Position, 1))\n")
         write(f, "t=$(time)\n")
-        writedlm(f,Matrix(hcat(agg.Geometry.outline,agg.Position)), ' ')
+        writedlm(f,hcat(agg.Geometry.outline,pos), ' ')
     end
 end
 

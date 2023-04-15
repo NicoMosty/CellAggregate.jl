@@ -31,22 +31,20 @@ function sum_force!(idx,points,force,force_par,dt)
 
         # Cleaning idx_sum
         force[i,k] = 0
-        dist = 0
 
         # Iterate on each row
         for j=1:size(idx,1)
-
             # Finding forces
             if idx[j,i] != i && idx[j,i] != 0
                 dist = euclidean(points,i,idx[j,i])
-                # <---------------------------- [THIS]
                 force[i,k] += force_func(force_par,i,dist) * (points[i,k]-points[idx[j,i],k])/dist
-                sync_threads()
             end
         end
 
+        # <------------------------------------------ THIS
         # Summing dX on the position of the aggregate on a specific dt
-        points[i,k] = points[i,k] + force[i,k]
+        points[i,k] = points[i,k] + force[i,k] * dt
+        # <------------------------------------------ THIS
         
     end
     return nothing

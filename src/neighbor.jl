@@ -103,17 +103,17 @@ function nearest_neighbors(agg::Aggregate)
     # Calculating Distance Matrix
     threads =(8,8)
     blocks  =cld.(size(agg.Position,1),threads)
-    @cuda threads=threads blocks=blocks dist_kernel!(agg.Simulation.Neighbor.idx, agg.Position ,agg.Index.Type,agg.Simulation.Parameter.Force.rₘₐₓ)
+    @cuda threads=threads blocks=blocks dist_kernel!(agg.Simulation.Neighbor.idx, agg.Position ,agg.Simulation.Parameter.Force.rₘₐₓ)
 
     # Reducing Distance Matrix to Nearest Neighbors
     threads = 64
     blocks  =cld.(size(agg.Position,1),threads)
-    @cuda threads=threads blocks=blocks reduce_kernel(agg.Simulation.Neighbor.idx, agg.Simulation.Neighbor.idx_red, agg.Simulation.Neighbor.idx_sum)
+    @cuda threads=threads blocks=blocks reduce_kernel!(agg.Simulation.Neighbor.idx, agg.Simulation.Neighbor.idx_red, agg.Simulation.Neighbor.idx_sum)
 
-    # Finding index contractile
-    threads = (8,8)
-    blocks  =cld.(size(agg.Position,1),threads)
-    @cuda threads=threads blocks=blocks index_contractile!(agg.Simulation.Neighbor.idx_cont,agg.Simulation.Neighbor.idx_sum,agg.Simulation.Neighbor.idx_red)
+    # # Finding index contractile
+    # threads = (8,8)
+    # blocks  =cld.(size(agg.Position,1),threads)
+    # @cuda threads=threads blocks=blocks index_contractile!(agg.Simulation.Neighbor.idx_cont,agg.Simulation.Neighbor.idx_sum,agg.Simulation.Neighbor.idx_red)
 end
 
 ################################ NEW ####################################
