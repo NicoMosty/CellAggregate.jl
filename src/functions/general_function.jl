@@ -14,6 +14,13 @@ Three packages, `CUDA`, `Adapt`, and `DelimitedFiles`, that are used in CellAggr
 using CUDA
 using Adapt
 using DelimitedFiles
+using ProgressMeter
+
+function check_data(path::String)
+    if path in readdir()
+        run(`rm $(path)`)
+    end
+end
 
 """
 # Euclidean Distance
@@ -58,9 +65,12 @@ julia> distance2 = euclidean(points, 1, 2)
 1.7320508075688772
 
 """
+  
+euclidean(A,B,i,j) = sqrt((A[i,1]+B[j,1])^2+(A[i,2]+B[j,2])^2+(A[i,3]+B[j,3])^2)
+euclidean(A,i,j)   = sqrt((A[i,1]-A[j,1])^2+(A[i,2]-A[j,2])^2+(A[i,3]-A[j,3])^2)
+euclidean(A,i)     = sqrt((A[i,1])^2+(A[i,2])^2+(A[i,3])^2)
+gabriel_dist(A,i,j,k) = sqrt((A[k,1]-(A[i,1]+A[j,1])/2)^2+(A[k,2]-(A[i,2]+A[j,2])/2)^2+(A[k,3]-(A[i,3]+A[j,3])/2)^2)
 
-euclidean(points,i,j) = sqrt((points[i,1]-points[j,1])^2+(points[i,2]-points[j,2])^2+(points[i,3]-points[j,3])^2)
-euclidean(points,i) = sqrt((points[i,1])^2+(points[i,2])^2+(points[i,3])^2)
 
 """
 # Find Radius of Aggregate
