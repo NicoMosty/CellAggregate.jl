@@ -404,7 +404,7 @@ Base.@kwdef mutable struct Aggregate
             radius,
             ifelse.(
                 [euclidean(pos,i) for i=1:size(pos,1)] .> radius*model.Input.outer_ratio,
-                1,0
+                1,2
             )
         )
         """
@@ -458,11 +458,15 @@ Base.@kwdef mutable struct Aggregate
         Returns:
             int: Size of the reduced index.
         """
-        idx_red_size =  max_rₘₐₓ ≤ 2.80 ? 13 :
-                2.80 < max_rₘₐₓ ≤ 3.45 ? 21 :
-                3.45 < max_rₘₐₓ ≤ 3.80 ? 39 :
-                3.80 < max_rₘₐₓ ≤ 4.00 ? 55 :
-                70
+
+        # idx_red_size =  max_rₘₐₓ ≤ 2.80 ? 20 :
+        #         2.80 < max_rₘₐₓ ≤ 3.45 ? 25 :
+        #         3.45 < max_rₘₐₓ ≤ 3.80 ? 40 :
+        #         3.80 < max_rₘₐₓ ≤ 4.00 ? 60 :
+        #         4.00 < max_rₘₐₓ ≤ 5.00 ? 80 :
+        #         5.0 < max_rₘₐₓ ≤ 7.00 ? 200 :
+        #         size(pos,1)/2
+        idx_red_size = 1000
 
         """
         # agg_parameter
