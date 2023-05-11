@@ -28,17 +28,56 @@ abstract type ForceType end
 Base.@kwdef struct Cubic{T}  <: ForceType
   μ₁ :: T;rₘᵢₙ :: T; rₘₐₓ :: T
 end
-force_func(p::Cubic, i, r) = - p.μ₁[i] * (r - p.rₘₐₓ[i])^2 * (r - p.rₘᵢₙ[i])
+function force_func(p::Cubic, i, r)
+  if r < p.rₘₐₓ[i] 
+    return - p.μ₁[i] * (r - p.rₘₐₓ[i])^2  * (r - p.rₘᵢₙ[i])
+    # return - p.μ₁[i]*max(p.rₘᵢₙ[i]-r,0)-max(r-p.rₘᵢₙ[i],0)/p.μ₁[i]
+  else 
+    return 0.0 
+  end
+end
 
 # LennardJones Model
 Base.@kwdef struct LennardJones{T}  <: ForceType
   μ₁ :: T;rₘᵢₙ :: T; rₘₐₓ :: T
 end
-force_func(p::LennardJones,i ,r) = 4 * p.μ₁[i] * ((p.rₘᵢₙ[i]/r)^12 -  (p.rₘᵢₙ[i]/r).^6)
+function force_func(p::LennardJones, i, r)
+  return 4 * p.μ₁[i] * ((p.rₘᵢₙ[i]/r)^12 -  (p.rₘᵢₙ[i]/r)^6)
+  # if r < p.rₘₐₓ[i] 
+  #     return -  4 * p.μ₁[i] * ((p.rₘᵢₙ[i]/r)^12 -  (p.rₘᵢₙ[i]/r)^6)
+  # else 
+  #   return 0.0 
+  # end
+end
 
+# Oriola Model
+Base.@kwdef struct Oriola{T}  <: ForceType
+  μ₁ :: T;rₘᵢₙ :: T; rₘₐₓ :: T
+end
+function force_func(p::Oriola, i, r)
+  return p.μ₁[i]*(max(p.rₘᵢₙ[i]-r),0)-p.μ₁[i]*max((p.rₘᵢₙ[i]-r)*(r-p.rₘₐₓ[i]),0)
+  # if r < p.rₘₐₓ[i]
+  #   # return max(p.μ₁[i]*(p.rₘᵢₙ[i]-r),0)-max(p.μ₁[i]*(p.rₘᵢₙ[i]-r)*(r-p.rₘₐₓ[i]),0)
+  #   return (max(p.μ₁[i]*(p.rₘᵢₙ[i]-r),0)-max(p.μ₁[i]*(p.rₘᵢₙ[i]-r)*(r-p.rₘₐₓ[i]),0))
+  # else 
+  #   return 0.0 
+  # end
+end
 
+# # Yalla Model
+# Base.@kwdef struct Yalla{T}  <: ForceType
+#   μ₁ :: T;rₘᵢₙ :: T; rₘₐₓ :: T
+# end
+# function force_func(p::Yalla, i, r)
+#   if r < p.rₘₐₓ[i] 
+#     return - p.μ₁[i]*max(p.rₘᵢₙ[i]-r,0)-max(r-p.rₘᵢₙ[i],0)*p.μ₁[i]
+#   else 
+#     return 0.0 
+#   end
+# end
+# r_max_vec(p,i) = p.rₘₐₓ[i]
 # <----------------------------------------------------- THIS
-# review this
+# review thiss
 # function list_force_type(name)
 
 #   # General Parameters
