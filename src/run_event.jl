@@ -71,8 +71,13 @@ function RunFusionAggregates(model::ModelSet, Par1, Par2, size)
         model
     )
     
-    run_test(agg, model,"Run One Aggregate       ")
+    run_test(agg, model,"Run One Aggregate     ")
     position = agg.Position
+    open("init_stable.xyz", "a") do f
+        write(f, "Initial Stable\n")
+        write(f, "t=0\n")
+        writedlm(f,hcat(agg.Geometry.outline,Matrix(position)), ' ')
+    end
     
     # Run fusion of two aggregates
     agg = nothing
@@ -81,7 +86,7 @@ function RunFusionAggregates(model::ModelSet, Par1, Par2, size)
         model
     )
 
-    run_test(agg, model,"Fusion of Two Aggregates   ")
+    run_test(agg, model,"Fusion of Two Aggregates")
 
     display(agg.Simulation.Neighbor.idx_sum)
     display(agg.Simulation.Neighbor.idx_red)
