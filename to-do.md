@@ -3,6 +3,3 @@
 
 # Test
 ### kernelCUDA/FixedNearestNeighbor/Forces.ipynb
-*
-
-TESTEITO [08 Jun 2023]
