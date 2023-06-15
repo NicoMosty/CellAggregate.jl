@@ -21,7 +21,8 @@ it to the total force on the point. After iterating over all neighbors, the func
 The function writes the computed force to the output array force. Finally, the position of each point is updated based on the total force acting on that 
 point and the time step.
 """
-function sum_force!(idx,idx_cont,idx_sum,points,force,force_par,cont_par,dt,t_knn)
+function sum_force!(idx,idx_cont,idx_sum,points,force,force_par,cont_par,dt,t_knn,pol_mat)
+    # pol_mat
     # Defining Index for kernel
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     k = (blockIdx().y - 1) * blockDim().y + threadIdx().y
@@ -32,6 +33,13 @@ function sum_force!(idx,idx_cont,idx_sum,points,force,force_par,cont_par,dt,t_kn
         # Cleaning force
         force[i,k] = 0
 
+        # # Generating Polarization vector
+        phi = 2*pi*(2*rand() - 1)
+
+        pol_mat[i,3] = 2*rand() - 1
+        pol_mat[i,1] = sqrt(1-pol_mat[i,3]^2)*cos(phi)
+        pol_mat[i,2] = sqrt(1-pol_mat[i,3]^2)*sin(phi)
+
         # Iterate on each row
         # for j=1:size(idx,1)
         for j=1:idx_sum[i]
@@ -41,18 +49,20 @@ function sum_force!(idx,idx_cont,idx_sum,points,force,force_par,cont_par,dt,t_kn
                 # if dist < force_par.rₘₐₓ[i]
                 force[i,k] += force_func(force_par,i,dist) * (points[i,k]-points[idx[j,i],k])/dist
                 # end
+                # <------------------------------------------- THIS [Add Area Function]
+
+                # <-------------------------------------------
             end
         end
 
-        # # Adding Contractile Force
-        # random[i,k] = 2*rand() - 1
-        # force[i,k] += cont_par[i]*random[i,k]/euclidean(random,i)
+        # Adding Contractile Force (Me without Area)
+        force[i,k] += cont_par[i]*pol_mat[i,k]
 
-        # Adding Contractile Force
-        if idx_cont[t_knn,i] != i && idx_cont[t_knn,i] != 0
-            dist = euclidean(points,i,idx_cont[t_knn,i])
-            force[i,k] -= cont_par[i]*(points[i,k]-points[idx_cont[t_knn,i],k])/dist
-        end
+        # # Adding Contractile Force (Oriola without Area)
+        # if idx_cont[t_knn,i] != i && idx_cont[t_knn,i] != 0
+        #     dist = euclidean(points,i,idx_cont[t_knn,i])
+        #     force[i,k] -= cont_par[i]*(points[i,k]-points[idx_cont[t_knn,i],k])/dist
+        # end
 
         # Summing dX on the position of the aggregate on a specific dt
         points[i,k] = points[i,k] + force[i,k] * dt

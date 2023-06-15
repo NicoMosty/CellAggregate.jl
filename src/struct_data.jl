@@ -322,6 +322,7 @@ Base.@kwdef mutable struct AggNeighbor
     idx_cont  
 end
 Base.@kwdef mutable struct AggForce
+    Pol
     F
     dX
 end
@@ -556,7 +557,8 @@ Base.@kwdef mutable struct Aggregate
         """
         force_cell = AggForce(
             dX       = CPUtoGPU(data_type, zeros(size(pos))),
-            F        = CPUtoGPU(data_type, zeros(size(pos)))
+            F        = CPUtoGPU(data_type, zeros(size(pos))),
+            Pol      = CPUtoGPU(data_type, zeros(size(pos))) 
         )
         simulation = AggSimulation(agg_parameter, neighbor_cell,force_cell)
 

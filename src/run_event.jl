@@ -35,7 +35,7 @@ function run_test(agg::Aggregate, model::ModelSet, title::String)
         @cuda(
             threads=threads,
             blocks=(cld.(size(agg.Position,1)+1,threads[1]),1),
-            sum_force!(agg.Simulation.Neighbor.idx_red,agg.Simulation.Neighbor.idx_cont,agg.Simulation.Neighbor.idx_sum,agg.Position,agg.Simulation.Force.F,agg.Simulation.Parameter.Force,agg.Simulation.Parameter.Contractile.fₚ,model.Time.dt,t_nₖₙₙ)
+            sum_force!(agg.Simulation.Neighbor.idx_red,agg.Simulation.Neighbor.idx_cont,agg.Simulation.Neighbor.idx_sum,agg.Position,agg.Simulation.Force.F,agg.Simulation.Parameter.Force,agg.Simulation.Parameter.Contractile.fₚ,model.Time.dt,t_nₖₙₙ,agg.Simulation.Force.Pol)
         )
 
         # <-------------------------------------00----- THIS
