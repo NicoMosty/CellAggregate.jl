@@ -43,43 +43,46 @@ function sum_force!(points,force,pol,idx_sum,idx,force_par,cont_par,A,dt)
         # Generating Polarization vector
         pol[i,1],pol[i,2],pol[i,3] = rand_to_pol(2*rand()/(32767+1)-1,2*pi*rand()/(32767+1))
 
-        # # Iterate on each row
-        # for j=1:idx_sum[i]
-        #     if idx[j,i] != 0
+        # Iterate on each row
+        for j=1:idx_sum[i]
+        # for j=1:1
+            if idx[j,i] != 0
 
                 # Finding forces
-                # dist = euclidean(points,idx[j,i],i)
-                # norm[ti,tk] = (points[i,k]-points[idx[j,i],k])/dist
-                
-                # force[i,k] = 0
-                # force[i,k] = dist
+                dist = euclidean(points,idx[j,i],i)
+                norm[ti,tk] = (points[i,k]-points[idx[j,i],k])/dist
+                sync_threads()
 
-                # sync_threads()
                 
                 # if dist < force_par.rₘₐₓ[i]
                 #     force[i,k] += force_func(force_par,i,dist) * norm[ti,tk]
                 # end
 
-                # # Adding Contractile Forces
+                # Adding Contractile Forces
                 # for m=1:3
                 #     N_i[ti] += (points[idx[j,i],m]-points[i,m])/dist * pol[i,m]
-                #     sync_threads()
                 # end
+                # N_i[ti] = (points[idx[j,i],1]-points[i,1])/dist * pol[i,1]
+                #         + (points[idx[j,i],2]-points[i,2])/dist * pol[i,2]
+                #         + (points[idx[j,i],3]-points[i,3])/dist * pol[i,3]
+
+                force[i,k] = 0
+                force[i,k] = points[i,k]
 
                 # if cos(pi/4) <  N_i[ti]
-                    # force[i,k]         += cont_par[i]*((N_i[ti]+1)*pol[i,k]-norm[ti,tk])
-                    # force[idx[j,i],k]  -= cont_par[i]*((N_i[ti]+1)*pol[i,k]-norm[ti,tk])
-                #     force[i,k]        += cont_par[i]*( 
-                #                                 sin(A)/(sqrt(1-N_i[ti]^2))*norm[ti,tk]  
-                #                             +  (cos(A) - sin(A)*N_i[ti]/(sqrt(1-N_i[ti]^2)))*pol[i,k]        
-                #                             )
-                #     force[idx[j,i],k] -= cont_par[i]*( 
-                #                                 sin(A)/(sqrt(1-N_i[ti]^2))*norm[ti,tk]  
-                #                             +  (cos(A) - sin(A)*N_i[ti]/(sqrt(1-N_i[ti]^2)))*pol[i,k]        
-                #                             )
+                #     force[i,k]         += cont_par[i]*((N_i[ti]+1)*pol[i,k]-norm[ti,tk])
+                #     force[idx[j,i],k]  -= cont_par[i]*((N_i[ti]+1)*pol[i,k]-norm[ti,tk])
+                #     # force[i,k]        += cont_par[i]*( 
+                #     #                             sin(A)/(sqrt(1-N_i[ti]^2))*norm[ti,tk]  
+                #     #                         +  (cos(A) - sin(A)*N_i[ti]/(sqrt(1-N_i[ti]^2)))*pol[i,k]        
+                #     #                         )
+                #     # force[idx[j,i],k] -= cont_par[i]*( 
+                #     #                             sin(A)/(sqrt(1-N_i[ti]^2))*norm[ti,tk]  
+                #     #                         +  (cos(A) - sin(A)*N_i[ti]/(sqrt(1-N_i[ti]^2)))*pol[i,k]        
+                #     #                         )
                 # end
-        #     end
-        # end
+            end
+        end
 
         # # Adding Contractile Force (Me without Area)
         # force[i,k] += cont_par[i]*pol[i,k]
