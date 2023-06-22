@@ -2,58 +2,59 @@ using ProgressMeter
 
 function run_test(agg::Aggregate, model::ModelSet, title::String)
 
-    dist = zeros(size(agg.Simulation.Neighbor.idx_red)) |> cu
+    open(model.Output.name_output*".xyz", "w") do f
+        write(f, "$(size(agg.Position, 1))\n")
+        write(f, "t=0\n")
+        writedlm(f,hcat(agg.Geometry.outline,Matrix(agg.Position)), ' ')
+    end
 
-    @showprogress "$(title)..."  for step::Int=0:model.Time.tₛᵢₘ/model.Time.dt
+    threads=(64,3)
+    @showprogress "$(title)..." for t=0:Int(model.Time.tₛᵢₘ/model.Time.dt)
+        # println(t)
+        # CUDA.@time 
+        @cuda(
+            threads = threads,
+            blocks = cld.(size(agg.Position,),threads),
+            shmem=prod(threads.+2)*sizeof(Float32),
+            sum_force!(
+                agg.Position,
+                agg.Simulation.Force.F,
+                agg.Simulation.Force.Pol,
+                agg.Simulation.Neighbor.idx_sum,
+                agg.Simulation.Neighbor.idx_red,
+                agg.Simulation.Parameter.Force,
+                agg.Simulation.Parameter.Contractile.fₚ,
+                atan(0.1),
+                model.Time.dt
+            )
+        )
 
-        # Saving data in a given time (nₛₐᵥₑ)
-        if (step % trunc(Int,model.Time.tₛᵢₘ/model.Time.nₛₐᵥₑ/model.Time.dt)) == 1
-            open("Test.xyz", "a") do f
-                write(f, "$(size(agg.Position, 1))\n")
-                write(f, "t=$(step*model.Time.dt)\n")
-                writedlm(f,hcat(agg.Geometry.outline,Matrix(agg.Position)), ' ')
-            end
-        end
-
-        # Calculating the kNN for the aggregate
-        t_nₖₙₙ = step % model.Time.nₖₙₙ+1
-        if t_nₖₙₙ == 1
-            
-            # Calculating Distance Matrix
+        if t%(model.Time.nₖₙₙ) == 0
+            # println("▲ Neighbor")
             threads=(100)
             @cuda(
                 threads=threads,
                 blocks=cld.(size(agg.Position,1),threads),
-                dist_kernel!(agg.Simulation.Neighbor.idx_red,agg.Simulation.Neighbor.idx_cont,agg.Simulation.Neighbor.idx_sum,dist,agg.Position,agg.Simulation.Parameter.Force.rₘₐₓ)
-            )
-
+                dist_kernel!(
+                    agg.Simulation.Neighbor.idx_red,
+                    agg.Simulation.Neighbor.idx_cont,
+                    agg.Simulation.Neighbor.idx_sum,
+                    agg.Simulation.Neighbor.dist,
+                    agg.Position,
+                    agg.Simulation.Parameter.Force.rₘₐₓ
+                )
+            ) 
         end
 
-        global prev_position = copy(agg.Position)
-        # Compute the forces between each pair of particles in `agg` and their displacement.
-        threads=(16,3)
-        @cuda(
-            threads=threads,
-            blocks=(cld.(size(agg.Position,1)+1,threads[1]),1),
-            sum_force!(agg.Simulation.Neighbor.idx_red,agg.Simulation.Neighbor.idx_cont,agg.Simulation.Neighbor.idx_sum,agg.Position,agg.Simulation.Force.F,agg.Simulation.Parameter.Force,agg.Simulation.Parameter.Contractile.fₚ,model.Time.dt,t_nₖₙₙ,agg.Simulation.Force.Pol)
-        )
-
-        # <-------------------------------------00----- THIS
-        if any(isnan.(agg.Position)) == true 
-        # || any(agg.Position .> 1e4) == true
-            println("ERROR t = $(step*model.Time.dt)")
-            println("NaN?    = $(any(isnan.(agg.Position)))")
-            println("Big?    = $(any(agg.Position .> 1e4))")
-            open("ErrorInit.xyz", "a") do f
-                write(f, "$(Int(size(prev_position, 1)/2))\n")
-                write(f, "t=$(step * model.Time.dt)\n")
-                writedlm(f,hcat(agg.Geometry.outline[1:Int(size(agg.Position,1)/2),:],Matrix(agg.Position[1:Int(size(agg.Position,1)/2),:])), ' ')
+        if t%Int(model.Time.tₛᵢₘ/model.Time.nₛₐᵥₑ) == 0
+            # println("▲ Save")
+            open(model.Output.name_output*".xyz", "a") do f
+                write(f, "$(size(agg.Position, 1))\n")
+                write(f, "t=$(t)\n")
+                writedlm(f,hcat(agg.Geometry.outline,Matrix(agg.Position)), ' ')
             end
-            break
         end
-        # <------------------------------------------ THIS
-
-    end 
+    end
 
 end
 

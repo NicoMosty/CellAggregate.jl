@@ -315,9 +315,9 @@ Base.@kwdef mutable struct AggParameter
     Contractile
     Radius
 end
-Base.@kwdef mutable struct AggNeighbor
-    idx       
-    idx_red    
+Base.@kwdef mutable struct AggNeighbor       
+    idx_red 
+    dist   
     idx_sum     
     idx_cont  
 end
@@ -539,8 +539,8 @@ Base.@kwdef mutable struct Aggregate
                               the number of time steps. This attribute is used to store the indices of the contacting neighbors at each time step.
         """
         neighbor_cell = AggNeighbor(
-            idx      = CPUtoGPU(data_type, Int32.(zeros(size(pos,1), size(pos,1)))),
             idx_red  = CPUtoGPU(data_type, Int32.(zeros(idx_red_size, size(pos,1)))),
+            dist     = CPUtoGPU(data_type, zeros(idx_red_size, size(pos,1))),
             idx_sum  = CPUtoGPU(data_type, Int32.(zeros(1,size(pos,1)))),
             idx_cont = CPUtoGPU(data_type, Int32.(zeros(model.Time.nₖₙₙ,size(pos,1))))
         )

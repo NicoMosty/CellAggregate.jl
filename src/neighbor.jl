@@ -50,6 +50,7 @@ maximum radius r_max, and to 0 otherwise.
 #     return nothing
 # end
 function dist_kernel!(idx,idx_cont,idx_sum,dist,points,r_max)
+
     i  = (blockIdx().x-1) * blockDim().x + threadIdx().x
 
     if i <= size(points,1)
@@ -65,7 +66,7 @@ function dist_kernel!(idx,idx_cont,idx_sum,dist,points,r_max)
         for j = 1:size(points,1)
             d = euclidean(points,i,j) 
             if d < r_max[i] && i!=j
-            # if d < 7.0 && i!=j
+            # if d < 5.0 && i!=j
                 idx_sum[i] += 1
                 idx[idx_sum[i],i] = j
                 dist[idx_sum[i],i] = d
