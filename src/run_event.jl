@@ -20,12 +20,13 @@ function run_test(agg::Aggregate, model::ModelSet, title::String)
                 agg.Position,
                 agg.Simulation.Force.F,
                 agg.Simulation.Force.Pol,
+                agg.Simulation.Force.N_i,
                 agg.Simulation.Neighbor.idx_sum,
                 agg.Simulation.Neighbor.idx_red,
                 agg.Simulation.Parameter.Force,
                 agg.Simulation.Parameter.Contractile.fₚ,
-                atan(0.1),
-                pi/3,
+                atan(1),
+                pi/4,
                 model.Time.dt
             )
         )

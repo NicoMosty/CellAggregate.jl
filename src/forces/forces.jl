@@ -54,15 +54,15 @@ function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt)
             if idx[j,i] != 0
 
                 # # Finding norm and distances
-                dist = euclidean(points,i,idx[j,i])
-                norm = (points[i,k]-points[idx[j,i],k])/dist
+                dist = euclidean(points,idx[j,i],i)
+                norm = (points[idx[j,i],k]-points[i,k])/dist
                 sync_threads()
 
-                # # Calculating forces on each cell
-                # if dist < force_par.rₘₐₓ[i]
-                #     force[i,k] += force_func(force_par,i,dist) * norm
-                #     sync_threads()
-                # end
+                # Calculating forces on each cell
+                if dist < force_par.rₘₐₓ[i]
+                    force[i,k] -= force_func(force_par,i,dist) * norm
+                    sync_threads()
+                end
                 
                 # Calculating angle between polarization vector and  ...
                 N_i[i] = 0
@@ -72,16 +72,16 @@ function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt)
                 end
 
                 if cos(B) <  N_i[i]
-                    force[i,k] += 1
-                #     force[i,k]         -= cont_par[i]*pol[i,k]
-                #     force[i,k]         -= cont_par[i]*pol[i,k]
-                #     force[idx[j,i],k]  += cont_par[i]*((N_i+1)*pol[i,k]-norm)
                 #     <-------------------------------------------------------------------------------- THIS
-                #     force[i,k] += 1
-                #     force[i,k]        += cont_par[i]*( 
-                #                                 sin(A)/(sqrt(1-N_i[ti]^2))*norm[ti,tk]  
-                #                             +  (cos(A) - sin(A)*N_i[ti]/(sqrt(1-N_i[ti]^2)))*pol[i,k]        
-                #                             )
+                    force[i,k]         -= cont_par[i]*pol[i,k]
+                    sync_threads()
+                    force[idx[j,i],k]  -= cont_par[i]*pol[i,k]
+                    sync_threads()
+                #     <-------------------------------------------------------------------------------- THIS
+                    # force[i,k]        -= cont_par[i]*( 
+                    #                             sin(A)/(sqrt(1-N_i[i]^2))*norm
+                    #                         +  (cos(A) - sin(A)*N_i[i]/(sqrt(1-N_i[i]^2)))*pol[i,k]        
+                    #                         )
                 #     force[idx[j,i],k] -= cont_par[i]*( 
                 #                                 sin(A)/(sqrt(1-N_i[ti]^2))*norm[ti,tk]  
                 #                             +  (cos(A) - sin(A)*N_i[ti]/(sqrt(1-N_i[ti]^2)))*pol[i,k]        
@@ -95,7 +95,6 @@ function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt)
         # <-------------------------------------------------------------------------------- THIS
         # Adding Contractile Force (Me without Area)
         
-
         # # Adding Contractile Force (Oriola without Area)
         # randomo[ti,tk] = rand(1:idx_sum[i])
         # force[i,k] = randomo[ti]
@@ -114,10 +113,8 @@ function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt)
         # end
         # <-------------------------------------------------------------------------------- THIS
 
-        # points[i,k] += force[i,k] * dt
+        points[i,k] += force[i,k] * dt
 
-        # # pol[i,1],pol[i,2],pol[i,3] = (randn(),randn(),randn())
-        # force[i,k] = teso
     end
 
     return nothing
