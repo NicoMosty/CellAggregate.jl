@@ -8,10 +8,10 @@ function run_test(agg::Aggregate, model::ModelSet, title::String)
         writedlm(f,hcat(agg.Geometry.outline,Matrix(agg.Position)), ' ')
     end
 
-    threads=(64,3)
     @showprogress "$(title)..." for t=0:Int(model.Time.tₛᵢₘ/model.Time.dt)
         # println(t)
         # CUDA.@time 
+        threads=(64,3)
         @cuda(
             threads = threads,
             blocks = cld.(size(agg.Position,),threads),
@@ -25,6 +25,7 @@ function run_test(agg::Aggregate, model::ModelSet, title::String)
                 agg.Simulation.Parameter.Force,
                 agg.Simulation.Parameter.Contractile.fₚ,
                 atan(0.1),
+                pi/3,
                 model.Time.dt
             )
         )
