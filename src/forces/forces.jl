@@ -54,13 +54,13 @@ function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt)
             if idx[j,i] != 0
 
                 # # Finding norm and distances
-                dist = euclidean(points,idx[j,i],i)
-                norm = (points[idx[j,i],k]-points[i,k])/dist
+                dist = euclidean(points,i,idx[j,i])
+                norm = (points[i,k]-points[idx[j,i],k])/dist
                 sync_threads()
 
                 # Calculating forces on each cell
                 if dist < force_par.rₘₐₓ[i]
-                    force[i,k] -= force_func(force_par,i,dist) * norm
+                    force[i,k] += force_func(force_par,i,dist) * norm
                     sync_threads()
                 end
                 
@@ -74,9 +74,10 @@ function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt)
                 if cos(B) <  N_i[i]
                 #     <-------------------------------------------------------------------------------- THIS
                     force[i,k]         -= cont_par[i]*pol[i,k]
+                    # force[i,k]         -= cont_par[i]*norm
                     sync_threads()
-                    force[idx[j,i],k]  -= cont_par[i]*pol[i,k]
-                    sync_threads()
+                    # force[idx[j,i],k]  -= cont_par[i]*pol[i,k]
+                    # sync_threads()
                 #     <-------------------------------------------------------------------------------- THIS
                     # force[i,k]        -= cont_par[i]*( 
                     #                             sin(A)/(sqrt(1-N_i[i]^2))*norm
