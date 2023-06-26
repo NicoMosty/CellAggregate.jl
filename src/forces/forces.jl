@@ -71,7 +71,9 @@ function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt)
                     sync_threads()
                 end
 
-                if cos(B) <  N_i[i]
+                # if cos(B) < N_i[i]
+                if cos(B - 0.07) > N_i[i] > cos(B + 0.07)
+                    # force[i,k] += 1
                 #     <-------------------------------------------------------------------------------- THIS
                     force[i,k]         -= cont_par[i]*pol[i,k]
                     # force[i,k]         -= cont_par[i]*norm
