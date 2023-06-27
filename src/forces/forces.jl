@@ -30,13 +30,12 @@ function angle_to_pol(pol,i)
     z = cos(pol[i,1])
     return (x,y,z)
 end
-function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt)
+function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt) #test
     # A -> Angle between parallel and pernedicular angle in force contractile
     # B -> Opening angle of the polarization ratio
 
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     k = (blockIdx().y - 1) * blockDim().y + threadIdx().y
-    ti, tk = threadIdx().x, threadIdx().y 
 
     if i <= size(points, 1) && k <= size(points, 2)
 
@@ -46,7 +45,6 @@ function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt)
         pol[i,1], pol[i,2], pol[i,3] = rand_to_angle()
         sync_threads()
         pol[i,1], pol[i,2], pol[i,3] = angle_to_pol(pol,i)
-        sync_threads()
 
         # Iterate on each row
         for j=1:idx_sum[i]
@@ -56,28 +54,25 @@ function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt)
                 # # Finding norm and distances
                 dist = euclidean(points,i,idx[j,i])
                 norm = (points[i,k]-points[idx[j,i],k])/dist
-                sync_threads()
 
                 # Calculating forces on each cell
                 if dist < force_par.rₘₐₓ[i]
                     force[i,k] += force_func(force_par,i,dist) * norm
-                    sync_threads()
                 end
                 
                 # Calculating angle between polarization vector and  ...
                 N_i[i] = 0
                 for m = 1:3
                     N_i[i] += (points[i,m]-points[idx[j,i],m])/dist * pol[i,m]
-                    sync_threads()
                 end
 
                 # if cos(B) < N_i[i]
                 if cos(B - 0.07) > N_i[i] > cos(B + 0.07)
-                    # force[i,k] += 1
+                    # test[i,k] += 1
                 #     <-------------------------------------------------------------------------------- THIS
                     force[i,k]         -= cont_par[i]*pol[i,k]
+                    # test[i,k] += 1
                     # force[i,k]         -= cont_par[i]*norm
-                    sync_threads()
                     # force[idx[j,i],k]  -= cont_par[i]*pol[i,k]
                     # sync_threads()
                 #     <-------------------------------------------------------------------------------- THIS
@@ -123,7 +118,6 @@ function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt)
     return nothing
 
 end
-
 # function sum_force!(idx,idx_cont,idx_sum,points,force,force_par,cont_par,dt,t_knn,pol_mat)
 #     # pol_mat
 #     # Defining Index for kernel

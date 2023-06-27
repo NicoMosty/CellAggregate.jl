@@ -15,7 +15,6 @@ function run_test(agg::Aggregate, model::ModelSet, title::String)
         @cuda(
             threads = threads,
             blocks = cld.(size(agg.Position,),threads),
-            shmem=prod(threads.+2)*sizeof(Float32),
             sum_force!(
                 agg.Position,
                 agg.Simulation.Force.F,
