@@ -51,7 +51,7 @@ julia $ agg = Aggregate(
     model
 )
 ```
-![stable](doc/README/Stable.gif)
+![stable](README/Stable.gif)
 ### Fusion of Aggregates
 #### Struct
 ``` julia
@@ -64,7 +64,7 @@ julia $ fusion_agg = Aggregate(
     model
 )
 ```
-![fusion](doc/README/Fusion.gif)
+![fusion](README/Fusion.gif)
 ### Complex Aggregates
 #### Struct
 ``` julia
@@ -79,7 +79,7 @@ julia $ agg = Aggregate(
     model
 )
 ```
-![complex](doc/README/Complex.gif)
+![complex](README/Complex.gif)
 ## Citation
 Pending
 
