@@ -181,11 +181,12 @@ end
 Base.@kwdef mutable struct OutputModel
     name_output      :: String
     path_output      :: String
+    d_saved          :: Float64
 end 
 Base.@kwdef mutable struct ModelSet
     Time        :: TimeModel
     Input       :: InputModel
-    Output
+    Output      :: OutputModel
 end
 
 
@@ -279,6 +280,7 @@ The AggGeometry mutable struct represents the geometric properties of an aggrega
 Base.@kwdef mutable struct AggGeometry
     radius_agg
     outline
+    range_x
 end
 """
 The AggParameter structure holds force, contractile and radius properties of an aggregate.
@@ -328,10 +330,17 @@ Base.@kwdef mutable struct AggForce
     dX
 end
 
+Base.@kwdef mutable struct AggOutput
+    x_axis
+    outline_data
+end
+
+
 Base.@kwdef mutable struct AggSimulation
     Parameter :: AggParameter
     Neighbor  :: AggNeighbor
     Force     :: AggForce
+    Output    :: AggOutput
 end
 
 """
@@ -362,6 +371,7 @@ Base.@kwdef mutable struct Aggregate
     Position
     Geometry
     Simulation
+    Output
 
     function Aggregate(agg_type, location, model)
 
@@ -389,26 +399,7 @@ Base.@kwdef mutable struct Aggregate
         pos = vcat(pos_loc...)
         # Joining aggregate radius of each cell according to the pos_loc calculation
         radius = repeat_prop(pos_loc, radius_loc)
-        """
-        # Geometry
-        This code defines a constructor for an AggGeometry struct with two fields: radius_agg and outline.
 
-            • The radius_agg field is assigned the value of the radius argument. 
-
-            • The outline field is created by computing a Boolean array where each element represents whether or not the 
-            corresponding aggregate is on the boundary of the simulation domain. This is determined by checking whether the 
-            Euclidean distance between the aggregate position and any of the simulation domain edges is greater than the product 
-            of the radius and the outer_ratio input parameter of the simulation model. If the distance is greater, the corresponding 
-            element of the outline array is set to 1, indicating that the aggregate is on the boundary. Otherwise, the element is set to 0.
-        ---
-        """
-        geometry = AggGeometry(
-            radius,
-            ifelse.(
-                [euclidean(pos,i) for i=1:size(pos,1)] .> radius*model.Input.outer_ratio,
-                1,2
-            )
-        )
         """
         # index
         This code initializes an AggIndex struct with three fields:
@@ -443,6 +434,29 @@ Base.@kwdef mutable struct Aggregate
         """
         move = vcat([vcat(repeat(loc[i,:], inner=(1,size.(filter_prop(agg_type,location,"Position"),1)[i]))...) for i=1:size(loc,1)]...)
         pos = CPUtoGPU(data_type,pos+move)
+
+        """
+        # Geometry
+        This code defines a constructor for an AggGeometry struct with two fields: radius_agg and outline.
+
+            • The radius_agg field is assigned the value of the radius argument. 
+
+            • The outline field is created by computing a Boolean array where each element represents whether or not the 
+            corresponding aggregate is on the boundary of the simulation domain. This is determined by checking whether the 
+            Euclidean distance between the aggregate position and any of the simulation domain edges is greater than the product 
+            of the radius and the outer_ratio input parameter of the simulation model. If the distance is greater, the corresponding 
+            element of the outline array is set to 1, indicating that the aggregate is on the boundary. Otherwise, the element is set to 0.
+        ---
+        """
+        range_x = extrema(Matrix(pos)[:,1])
+        geometry = AggGeometry(
+            radius,
+            ifelse.(
+                [euclidean(Matrix(pos),i) for i=1:size(pos,1)] .> radius*model.Input.outer_ratio,
+                1,2
+            ),
+            range_x
+        )
 
         """
         This line of code calculates the maximum value of the r_max attribute of the Force object of each element in the Interaction field of each element in the agg_type input. 
@@ -562,7 +576,17 @@ Base.@kwdef mutable struct Aggregate
             Pol      = CPUtoGPU(data_type, zeros(size(pos))) ,
             N_i      = CPUtoGPU(data_type, zeros(1,size(pos,1))) 
         )
-        simulation = AggSimulation(agg_parameter, neighbor_cell,force_cell)
+
+        val_x  = repeat([max_min_agg(range_x,model.Output.d_saved)...], inner=2)
+        simulation = AggSimulation(
+            agg_parameter, 
+            neighbor_cell,
+            force_cell,
+            AggOutput(
+                x_axis = val_x,
+                outline_data = zeros(model.Time.nₛₐᵥₑ+1,size(val_x,1))
+            )
+        )
 
         new(agg_type,index, pos, geometry, simulation)
     end
