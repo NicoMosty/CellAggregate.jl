@@ -13,6 +13,7 @@ Three packages, `CUDA`, `Adapt`, and `DelimitedFiles`, that are used in CellAggr
 =#
 using CUDA
 using Adapt
+using Dates
 using DelimitedFiles
 using ProgressMeter
 
@@ -408,6 +409,8 @@ macro start_agg(variable)
         end
     esc(eval(run))
 end
+
+max_min_agg(data,d_data) = ceil(data[1])-5:d_data:floor(data[2])+5
 
 # <----------------------------------------------- REVIEW THIS
 ################################ OLD ####################################
