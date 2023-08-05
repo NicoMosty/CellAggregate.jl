@@ -30,7 +30,7 @@ function angle_to_pol(pol,i)
     z = cos(pol[i,1])
     return (x,y,z)
 end
-function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt) #test
+function sum_force!(points,force,pol,dpol,N_i,idx_sum,idx,force_par,cont_par,ψₜ,ψₘ,ω,dt) #test
     # A -> Angle between parallel and pernedicular angle in force contractile
     # B -> Opening angle of the polarization ratio
 
@@ -42,10 +42,11 @@ function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt) 
         # Cleaning force
         force[i,k] = 0
         
-        pol[i,1], pol[i,2], pol[i,3] = rand_to_angle()
+        dpol[i,1], dpol[i,2], dpol[i,3] = rand_to_angle()
         sync_threads()
-        pol[i,1], pol[i,2], pol[i,3] = angle_to_pol(pol,i)
-
+        dpol[i,1], dpol[i,2], dpol[i,3] = angle_to_pol(dpol,i)
+        pol[i,k] = (1-ω[i])*pol[i,k] + ω[i]*dpol[i,k]
+        
         # Iterate on each row
         for j=1:idx_sum[i]
         # for j=1:1
@@ -67,7 +68,7 @@ function sum_force!(points,force,pol,N_i,idx_sum,idx,force_par,cont_par,A,B,dt) 
                 end
 
                 # if cos(B) < N_i[i]
-                if cos(B - 0.07) > N_i[i] > cos(B + 0.07)
+                if cos(ψₜ[i] - ψₘ[i]) > N_i[i] > cos(ψₜ[i] + ψₘ[i])
                     # test[i,k] += 1
                 #     <-------------------------------------------------------------------------------- THIS
                     force[i,k]         -= cont_par[i]*pol[i,k]
