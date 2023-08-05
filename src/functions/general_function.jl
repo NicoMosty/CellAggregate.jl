@@ -16,6 +16,7 @@ using Adapt
 using Dates
 using DelimitedFiles
 using ProgressMeter
+using InteractiveUtils
 
 function check_data(path::String)
     if path in readdir()
@@ -156,6 +157,15 @@ result = CPUtoGPU(comp, var)
 """
 CPUtoGPU(comp, var) = comp <: CuArray ? var |> cu : var
 
+"""
+CHECK FOR THIS EXPLANATION
+"""
+function cart_to_sph(data)
+    return hcat(
+        [data[i,2] >= 1 ? pi/2-atan(data[i,1]/data[i,2]) : 3*pi/2-atan(data[i,1]/data[i,2]) for i=1:size(data,1)],
+        sqrt.(sum(data .^ 2, dims=2))
+    )
+end
 #================================== STRUCT FUNCTIONS ====================================#
 """
 # ForceType as Index
