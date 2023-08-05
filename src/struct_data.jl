@@ -131,8 +131,11 @@ julia> interaction_par.Contractile.fₚ
 2.5
 
 """
-Base.@kwdef mutable struct ContractilePar
-    fₚ           
+Base.@kwdef mutable struct ContractilePar{T}
+    fₚ :: T # Contractile Constant
+    ψₜ :: T # Tuned Angle Parameter
+    ψₘ :: T # Motility Angle Parameter
+    ω  :: T # Memory Rotation Polarization Angle         
 end
 Base.@kwdef mutable struct InteractionPar
     Force        :: ForceType
@@ -328,11 +331,13 @@ Base.@kwdef mutable struct AggForce
     N_i
     F
     dX
+    dPol
 end
 
 Base.@kwdef mutable struct AggOutput
-    x_axis
-    outline_data
+    time
+    xy_data
+    θr_data
 end
 
 
@@ -527,10 +532,14 @@ Base.@kwdef mutable struct Aggregate
                 ]...
             ),
             ContractilePar(
-                CPUtoGPU(
-                    data_type,
-                    repeat_prop(pos_loc,[getproperty(contractile_loc[i],:fₚ) for i=1:size(location,1)])
-                )
+                    [
+                    CPUtoGPU(data_type,repeat_prop(
+                        pos_loc,
+                        [getproperty(contractile_loc[i],fieldnames(ContractilePar)[j]) 
+                            for i=1:size(location,1)]
+                    ))
+                    for j=1:size(fieldnames(ContractilePar),1)
+                ]...
             ),
             CPUtoGPU(data_type,vcat([agg_type[i].Radius' for i=1:size(agg_type,1)]...))
         )
@@ -574,6 +583,7 @@ Base.@kwdef mutable struct Aggregate
             dX       = CPUtoGPU(data_type, zeros(size(pos))),
             F        = CPUtoGPU(data_type, zeros(size(pos))),
             Pol      = CPUtoGPU(data_type, zeros(size(pos))) ,
+            dPol      = CPUtoGPU(data_type, zeros(size(pos))),
             N_i      = CPUtoGPU(data_type, zeros(1,size(pos,1))) 
         )
 
@@ -583,8 +593,9 @@ Base.@kwdef mutable struct Aggregate
             neighbor_cell,
             force_cell,
             AggOutput(
-                x_axis = val_x,
-                outline_data = zeros(model.Time.nₛₐᵥₑ+1,size(val_x,1))
+                Vector(),
+                Vector(),
+                Vector()
             )
         )
 
