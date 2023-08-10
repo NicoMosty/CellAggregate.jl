@@ -1,5 +1,0 @@
-# This file was created Sun, 06 Aug 2023 17:34:19 
-# Created by CellAggregate.jl 
-# Based on Cartesian Coordinates 
-@    xaxis label "x position of each cell"  
-@    yaxis label "y position of each cell"  
