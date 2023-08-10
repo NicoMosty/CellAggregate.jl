@@ -35,7 +35,6 @@ function show_aggregates(agg::Aggregate)
     println("Radius")
     display(agg.Simulation.Parameter.Radius)
     println("------------------ Neighbors Size -------------------")
-    println("idx      = $(size(agg.Simulation.Neighbor.idx))")
     println("idx_red  = $(size(agg.Simulation.Neighbor.idx_red))")
     println("idx_sum  = $(size(agg.Simulation.Neighbor.idx_sum))")
     println("idx_cont = $(size(agg.Simulation.Neighbor.idx_cont))")
@@ -139,4 +138,24 @@ function save_data(agg::Aggregate, time, Path, Name)
         write(f, "t=$(time)\n")
         writedlm(f,Matrix(hcat(agg.Geometry.outline,agg.Position)), ' ')
     end
+end
+
+"""
+This is for clean the CUDA data in agg
+"""
+function clean_CUDA(data)
+    for i in fieldnames(typeof(data))
+        if typeof(getproperty(data, i)) <: CuArray
+            CUDA.unsafe_free!(getproperty(data, i))
+        end
+    end
+end
+
+function clean_agg(agg)
+    CUDA.unsafe_free!(agg.Position)
+    clean_CUDA(agg.Index)
+    clean_CUDA(agg.Simulation.Limit)
+    clean_CUDA(agg.Simulation.Parameter)
+    clean_CUDA(agg.Simulation.Neighbor)
+    clean_CUDA(agg.Simulation.Force)
 end
