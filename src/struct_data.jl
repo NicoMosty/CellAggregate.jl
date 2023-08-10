@@ -338,10 +338,17 @@ Base.@kwdef mutable struct AggOutput
     time
     xy_data
     θr_data
+    neck_data
+    width_data  
 end
 
+Base.@kwdef mutable struct AggLimit
+    max_grid  
+    break_sim 
+end
 
 Base.@kwdef mutable struct AggSimulation
+    Limit     :: AggLimit
     Parameter :: AggParameter
     Neighbor  :: AggNeighbor
     Force     :: AggForce
@@ -417,7 +424,18 @@ Base.@kwdef mutable struct Aggregate
         
         The CPUtoGPU function converts an array from CPU memory to GPU memory, which is used for faster processing on a GPU. 
             The Int. function converts the array elements to integers. The repeat_prop function repeats each element of a list by a given number of 
-            times and returns a flattened array of the results.
+            times and returns a flattened array of the resultfunction kernel!(A,B)
+
+            i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+            k = (blockIdx().y - 1) * blockDim().y + threadIdx().y
+        
+            if i <= size(A, 1) && k <= size(A, 2)
+                if A[i,k] > 1
+                    B[1,1] = true
+                end
+            end
+            return nothing
+        ends.
         
         The AggIndex struct seems to be used for keeping track of the properties of the aggregates, such as their type, index, and name, and is 
         likely used in later processing steps.
@@ -587,12 +605,20 @@ Base.@kwdef mutable struct Aggregate
             N_i      = CPUtoGPU(data_type, zeros(1,size(pos,1))) 
         )
 
+        agg_limit = AggLimit(
+            maximum(Matrix(pos))*2,
+            [false] |> cu
+        )
+
         val_x  = repeat([max_min_agg(range_x,model.Output.d_saved)...], inner=2)
         simulation = AggSimulation(
+            agg_limit,
             agg_parameter, 
             neighbor_cell,
             force_cell,
             AggOutput(
+                Vector(),
+                Vector(),
                 Vector(),
                 Vector(),
                 Vector()
