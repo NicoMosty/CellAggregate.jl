@@ -11,15 +11,15 @@ function create_dir(name)
     end
 end
 
-path_princ = ".results_2"
+path_princ = ".results_3"
 if !(path_princ in readdir()) mkdir(path_princ) end
 
-for cont_par = [0.2]
+for cont_par = [0.1, 0.2, 0.3, 0.4]
     println("================ Running = cont_par = $(cont_par) ===========================")
     create_dir(path_princ*"/cont_par($(cont_par))")
 
     # # for 2
-    for force_par = [0.0005, 0.005, 0.05, 0.1] # for force_par = [0.0005, 0.005, 0.05, 0.1]
+    for force_par = [0.05, 0.1, 0.15, 0.2] # for force_par = [0.0005, 0.005, 0.05, 0.1]
         println("---- Running = force_par = $(force_par) ----")
         create_dir(path_princ*"/cont_par($(cont_par))/force_par($(force_par))")
 
@@ -62,6 +62,7 @@ for cont_par = [0.2]
 
         if agg.Simulation.Limit.break_sim == CuArray([false])
             position=agg.Position
+            clean_agg(agg)
         
             # Run fusion of two aggregates
             agg = nothing
@@ -71,6 +72,8 @@ for cont_par = [0.2]
             )
             println("Two Aggs")
             run_test(agg, model, "Fusion of Two Aggregates", true, true)
+            clean_agg(agg)
+            
         elseif agg.Simulation.Limit.break_sim == CuArray([true])
             println("Breaking the Simulation (NaN Value or Bigger Values)")
         end
