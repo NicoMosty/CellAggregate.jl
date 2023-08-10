@@ -11,17 +11,17 @@ function create_dir(name)
     end
 end
 
-if !(".results" in readdir()) mkdir(".results") end
+path_princ = ".results_2"
+if !(path_princ in readdir()) mkdir(path_princ) end
 
-for cont_par = [0.5]
+for cont_par = [0.2]
     println("================ Running = cont_par = $(cont_par) ===========================")
-    create_dir(".results/cont_par($(cont_par))")
+    create_dir(path_princ*"/cont_par($(cont_par))")
 
     # # for 2
-    # for force_par = [0.0005, 0.005, 0.05, 0.1]
-    for force_par = [0.0005, 0.1]
+    for force_par = [0.0005, 0.005, 0.05, 0.1] # for force_par = [0.0005, 0.005, 0.05, 0.1]
         println("---- Running = force_par = $(force_par) ----")
-        create_dir(".results/cont_par($(cont_par))/force_par($(force_par))")
+        create_dir(path_princ*"/cont_par($(cont_par))/force_par($(force_par))")
 
         model = ModelSet(
             TimeModel(
@@ -36,17 +36,13 @@ for cont_par = [0.5]
             ),
             OutputModel(
                 name_output = "Test_1",
-                path_output = ".results/cont_par($(cont_par))/force_par($(force_par))/",
+                path_output = path_princ*"/cont_par($(cont_par))/force_par($(force_par))/",
                 d_saved = 0.5
             ) 
         )
 
         # Run Model
         Par1 ,Par2 = Cubic(force_par,2.0,3.0), ContractilePar(cont_par,pi/4,0.08,1.0)
-        # Par1 ,Par2 = Cubic(4.2,2.0,3.0), ContractilePar(0.267,pi/4,0.08,1.0)
-
-        # ContractilePar(0.02);
-        # RunFusionAggregates(model::ModelSet, Par1, Par2, 15)
         size_agg = 15
 
         # Run only one aggregate
@@ -62,15 +58,10 @@ for cont_par = [0.5]
         )
 
         println("One Agg")
-        @time run_test(agg, model,"Run One Aggregate", false, false)
+        run_test(agg, model,"Run One Aggregate", false, false)
 
         if agg.Simulation.Limit.break_sim == CuArray([false])
             position=agg.Position
-            open("init_stable.xyz", "a") do f
-                write(f, "Initial Stable\n")
-                write(f, "t=0\n")
-                writedlm(f,hcat(agg.Geometry.outline,Matrix(position)), ' ')
-            end
         
             # Run fusion of two aggregates
             agg = nothing
@@ -79,7 +70,7 @@ for cont_par = [0.5]
                 model
             )
             println("Two Aggs")
-            @time run_test(agg, model, "Fusion of Two Aggregates", true, true)
+            run_test(agg, model, "Fusion of Two Aggregates", true, true)
         elseif agg.Simulation.Limit.break_sim == CuArray([true])
             println("Breaking the Simulation (NaN Value or Bigger Values)")
         end
