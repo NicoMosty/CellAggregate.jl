@@ -78,3 +78,43 @@ function Sphere_HCP(R_agg, R_Cell, x_o, y_o, z_o, digit = 2)
     end
     return [x y z round.(dist; digits = 3) fill(R_Cell, length(x))]
 end
+
+# REVIEW THIS
+function generate_random_packaging(R_agg, m::Model)
+    R_sup = R_agg
+    while true
+        println("--------------------------------------------------")
+        println("R_Agg = $(R_sup)")
+        println("Random Packaging")
+        X = sphere(R_sup)
+
+        # Generating Struct
+        global Agg = Aggregate(Neighbor(50, 12), PositionCell(X))
+
+        # Simulation One Aggregate
+        one_aggregate(false, m, Cubic(1.0, 2.0, 3.0), Agg)
+
+        Size = Float32(
+                (findmax(Agg.Position.X[:,1])[1] - findmin(Agg.Position.X[:,1])[1])/2 + 1
+            ) 
+
+        println("---------")
+        println("R_Agg_Calc = $(Size)")
+
+        if Size < R_agg
+            R_sup += + 0.5
+            println("---------")
+            println("Adding R_sup")
+            println("*********")
+        else
+            break
+        end
+    end
+
+    open("$(R_agg).xyz", "w") do f
+        write(f, "$(size(Agg.Position.X, 1))\n")
+        write(f, "Random Packaging ($(R_agg)).xyz\n")
+        writedlm(f,hcat(repeat([1.0],size(Agg.Position.X, 1)), Matrix(Agg.Position.X)), ' ')
+    end
+    
+end
