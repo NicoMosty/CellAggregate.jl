@@ -15,8 +15,8 @@ function sphere_range(bias_lenght,bias_size,N,span)
     )./100 .+ span[1]
 end
 
-function max_min_agg(data,N, bias_lenght, bias_size)
-    dx = (minimum(data[:,1]), maximum(data[:,1]))
+function max_min_agg(data_cell,N, bias_lenght, bias_size)
+    dx = (minimum(data_cell[:,1]), maximum(data_cell[:,1]))
     d_data_x = (dx[2]-dx[1])/N
 
     agg_range = sphere_range(
@@ -24,14 +24,14 @@ function max_min_agg(data,N, bias_lenght, bias_size)
         2,
         N,
         [
-            minimum(data[:,1]),
-            maximum(data[:,1])
+            minimum(data_cell[:,1]),
+            maximum(data_cell[:,1])
         ]
     )
 
     min_max = Vector()
     for i=1:size(agg_range,1)
-        data_find = data[(agg_range .- (d_data_x/4))[i] .< data[:,1] .<= (agg_range .+ (d_data_x/4))[i],2]
+        data_find = data_cell[(agg_range .- (d_data_x/4))[i] .< data_cell[:,1] .<= (agg_range .+ (d_data_x/4))[i],2]
         if size(data_find,1) == 0
             push!(min_max, [0 0])
             push!(min_max, [0 0])
@@ -43,6 +43,16 @@ function max_min_agg(data,N, bias_lenght, bias_size)
     min_max =vcat(min_max...)
     min_max .-= sum(min_max, dims=1)/size(min_max,1)
     return min_max
+end
+
+function neck_width_agg(data_cell)
+    θ₀   = maximum(data_cell[:,2][0      .<= data_cell[:,1] .< pi/4  ])
+    θ₉₀  = minimum(data_cell[:,2][pi/4   .<= data_cell[:,1] .< 3*pi/4])
+    θ₁₈₀ = maximum(data_cell[:,2][3*pi/4 .<= data_cell[:,1] .< 5*pi/4])
+    θ₂₇₀ = minimum(data_cell[:,2][5*pi/4 .<= data_cell[:,1] .< 7*pi/4])
+    θ₃₆₀ = maximum(data_cell[:,2][7*pi/4 .<= data_cell[:,1] .< 2*pi  ])
+
+    return (θ₀+θ₃₆₀)/2 + θ₁₈₀, θ₉₀+θ₂₇₀
 end
 
 # REVIEW THIS
