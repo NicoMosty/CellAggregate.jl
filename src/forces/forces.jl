@@ -30,7 +30,7 @@ function angle_to_pol(pol,i)
     z = cos(pol[i,1])
     return (x,y,z)
 end
-function sum_force!(points,force,pol,dpol,N_i,idx_sum,idx,force_par,cont_par,ψₜ,ψₘ,ω,dt) #test
+function sum_force!(points,force,pol,dpol,N_i,idx_sum,idx,force_par,cont_par,ψₜ,ψₘ,ω,dt,max_grid,break_sim) #test
     # A -> Angle between parallel and pernedicular angle in force contractile
     # B -> Opening angle of the polarization ratio
 
@@ -112,7 +112,13 @@ function sum_force!(points,force,pol,dpol,N_i,idx_sum,idx,force_par,cont_par,ψ�
         # end
         # <-------------------------------------------------------------------------------- THIS
 
+        # Adding the force on each cell
         points[i,k] += force[i,k] * dt
+
+        # For break the kernel when the values are out of the grid
+        if points[i,k] > max_grid || isnan(points[i,k])
+            break_sim[1,1] = true
+        end
 
     end
 
