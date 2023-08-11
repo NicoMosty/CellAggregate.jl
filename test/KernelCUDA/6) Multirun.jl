@@ -11,15 +11,16 @@ function create_dir(name)
     end
 end
 
-path_princ = ".results_3"
+path_princ = ".results_4"
 if !(path_princ in readdir()) mkdir(path_princ) end
 
-for cont_par = [0.1, 0.2, 0.3, 0.4]
+for cont_par = [0.2, 0.3, 0.4]
     println("================ Running = cont_par = $(cont_par) ===========================")
     create_dir(path_princ*"/cont_par($(cont_par))")
 
+    fp = 0.8 * cont_par^3
     # # for 2
-    for force_par = [0.05, 0.1, 0.15, 0.2] # for force_par = [0.0005, 0.005, 0.05, 0.1]
+    for force_par = [0.8*fp, fp, 1.2*fp] # for force_par = [0.0005, 0.005, 0.05, 0.1]
         println("---- Running = force_par = $(force_par) ----")
         create_dir(path_princ*"/cont_par($(cont_par))/force_par($(force_par))")
 
@@ -61,7 +62,7 @@ for cont_par = [0.1, 0.2, 0.3, 0.4]
         run_test(agg, model,"Run One Aggregate", false, false)
 
         if agg.Simulation.Limit.break_sim == CuArray([false])
-            position=agg.Position
+            position=copy(agg.Position)
             clean_agg(agg)
         
             # Run fusion of two aggregates
