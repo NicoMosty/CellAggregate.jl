@@ -1,5 +1,3 @@
-using Images, FileIO
-
 function sphere_range(bias_lenght,bias_size,N,span)
     Δ_int = N/5
     bias_m = bias_lenght/bias_size
