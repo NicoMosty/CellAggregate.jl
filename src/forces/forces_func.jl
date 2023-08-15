@@ -21,7 +21,7 @@ defined by the user.
   force formula for each type.
 """
 
-include("../functions/general_function.jl")
+# include("../functions/general_function.jl")
 abstract type ForceType end
 
 # Cubic Model
