@@ -7,8 +7,10 @@ module CellAggregate
     export AggType, AggLocation, AggIndex, AggGeometry
     export Aggregate, AggParameter, AggNeighbor, AggForce, AggOutput, AggLimit, AggSimulation
     export ModelSet, TimeModel, InputModel, OutputModel, ModelSet
-    export sphere_range, max_min_agg, neck_width_agg
-    export run_test
+    export sphere_range
+    # , max_min_agg, neck_width_agg
+    
+    # export run_test
 
     include("./functions/general_function.jl")
     include("./forces/forces_func.jl")
@@ -16,8 +18,8 @@ module CellAggregate
     include("./functions/aggregate_functions.jl")
     include("./forces/forces.jl")
     include("neighbor.jl")
-    include("extract_info.jl")
-    include("run_event.jl")
+    # include("extract_info.jl")
+    # include("run_event.jl")
 end
 # <=================================== REVIEW THE WARNINGS
 
