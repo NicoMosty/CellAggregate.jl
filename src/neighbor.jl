@@ -15,40 +15,6 @@ maximum radius r_max, and to 0 otherwise.
     The indices i and j are computed based on the thread indices and block indices. The euclidean function is assumed 
     to compute the Euclidean distance between two points. The function returns nothing.
 """
-# # Reduce Kernel
-# Reduce neighbor list using prefix sum algorithm.
-
-#     The function takes the following arguments:
-
-#         • idx     : CuArray{Int,2} : Neighbor list for all particles
-#         • idx_red : CuArray{Int,2} : Reduced neighbor list for all particles
-#         • idx_sum : CuArray{Int,1} : The start index of the neighbor list for each particle in idx_red
-
-#     The function is executed on the GPU using CUDA and is designed to be called from a host function.
-
-# """
-# function reduce_kernel!(idx,idx_red,idx_sum)
-#     i  = (blockIdx().x-1) * blockDim().x + threadIdx().x
-
-#     if i <= size(idx,1)
-
-#         # Cleaning
-#         idx_sum[i] = 0
-#         for m = 1:size(idx_red,1)
-#             idx_red[m,i] = 0
-#         end
-
-#         for j = 1:size(idx,1)
-#             if idx[j,i] != 0
-#                 idx_sum[i] += 1
-#                 idx_red[idx_sum[i],i] = j
-#             end
-#         end
-
-#     end
-#     # sync_threads()
-#     return nothing
-# end
 function dist_kernel!(idx,idx_cont,idx_sum,dist,points,r_max)
 
     i  = (blockIdx().x-1) * blockDim().x + threadIdx().x
@@ -248,56 +214,39 @@ end
 #     # @cuda threads=threads blocks=blocks index_contractile!(agg.Simulation.Neighbor.idx_cont,agg.Simulation.Neighbor.idx_sum,agg.Simulation.Neighbor.idx_red)
 # end
 
-################################ NEW ####################################
-# using CUDA
-# using NearestNeighbors
+#########################################################3
 
-# function cpu_knn(X, nn)
-#     kdtree = KDTree(X')
-#     idx = Int.(zeros(nn,size(X,1)))
-#     for i in 1:size(X)[1]
-#         # Scan neighbours
-#         idx[:,i], _ = knn(kdtree, X[i,1:3], nn, true)
+# # Reduce Kernel
+# Reduce neighbor list using prefix sum algorithm.
+
+#     The function takes the following arguments:
+
+#         • idx     : CuArray{Int,2} : Neighbor list for all particles
+#         • idx_red : CuArray{Int,2} : Reduced neighbor list for all particles
+#         • idx_sum : CuArray{Int,1} : The start index of the neighbor list for each particle in idx_red
+
+#     The function is executed on the GPU using CUDA and is designed to be called from a host function.
+
+# """
+# function reduce_kernel!(idx,idx_red,idx_sum)
+#     i  = (blockIdx().x-1) * blockDim().x + threadIdx().x
+
+#     if i <= size(idx,1)
+
+#         # Cleaning
+#         idx_sum[i] = 0
+#         for m = 1:size(idx_red,1)
+#             idx_red[m,i] = 0
+#         end
+
+#         for j = 1:size(idx,1)
+#             if idx[j,i] != 0
+#                 idx_sum[i] += 1
+#                 idx_red[idx_sum[i],i] = j
+#             end
+#         end
+
 #     end
-#     return Matrix(idx)
-# end
-
-# function cu_knn(Agg::Aggregate)
-#     # Definig Variables for calculing knn
-#     global Agg
-    
-#     # Defining Coordinates of each cell on the aggregates
-#     Agg.Neighbor.i_Cell = reshape(
-#                 repeat(
-#                     Agg.Position.X, 
-#                     size(Agg.Position.X ,1)
-#                 ), 
-#                 size(Agg.Position.X ,1), 
-#                 size(Agg.Position.X ,1), 
-#                 3
-#             ) - 
-#             reshape(
-#                 repeat(
-#                     Agg.Position.X, 
-#                     inner=(size(Agg.Position.X ,1),1)
-#                 ), 
-#                 size(Agg.Position.X ,1), 
-#                 size(Agg.Position.X ,1), 
-#                 3
-#             )
-
-#     # Calculating Norm on every cell on the aggregate
-#     Agg.Neighbor.Dist = sqrt.(
-#                 Agg.Neighbor.i_Cell[:,:,1] .^ 2 + 
-#                 Agg.Neighbor.i_Cell[:,:,2] .^ 2 + 
-#                 Agg.Neighbor.i_Cell[:,:,3] .^ 2
-#                 )
-#     # # i_Cell = nothing; GC.gc(true)
-
-#     # Calculating index of knof each cell in the aggregate
-#     for i = 1:Agg.ParNeighbor.nn
-#         Agg.Neighbor.idx[i,:] = findmin(Agg.Neighbor.Dist; dims=1)[2]
-#         Agg.Neighbor.Dist[Agg.Neighbor.idx[i,:]] .= Inf
-#     end
-#     synchronize()
+#     # sync_threads()
+#     return nothing
 # end
