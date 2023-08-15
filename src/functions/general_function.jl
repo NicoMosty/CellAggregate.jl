@@ -11,12 +11,12 @@ Three packages, `CUDA`, `Adapt`, and `DelimitedFiles`, that are used in CellAggr
 `DelimitedFiles` is a package that provides functions for reading and writing delimited text 
                  files, such as CSV files.
 =#
-using CUDA
-using Adapt
-using Dates
-using DelimitedFiles
-using ProgressMeter
-using InteractiveUtils
+# using CUDA
+# using Adapt
+# using Dates
+# using DelimitedFiles
+# using ProgressMeter
+# using InteractiveUtils
 
 function check_data(path::String)
     if path in readdir()
