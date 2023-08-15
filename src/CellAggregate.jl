@@ -1,16 +1,25 @@
 module CellAggregate
 
-    import CUDA, Adapt, Dates, DelimitedFiles, ProgressMeter, InteractiveUtils, Images, FileIO
+    using CUDA, Adapt, Dates, DelimitedFiles, ProgressMeter, InteractiveUtils, Images, FileIO
+    export Cubic, LennardJones, Oriola # <- Make a macro to export all the forces on "./forces/forces_func.jl"
 
     export ContractilePar, InteractionPar
     export AggType, AggLocation, AggIndex, AggGeometry
     export Aggregate, AggParameter, AggNeighbor, AggForce, AggOutput, AggLimit, AggSimulation
     export ModelSet, TimeModel, InputModel, OutputModel, ModelSet
+    export sphere_range, max_min_agg, neck_width_agg
+    export run_test
 
     include("./functions/general_function.jl")
     include("./forces/forces_func.jl")
-    include("struct_data.jl") # <- Review the Aggregate Function
+    include("struct_data.jl")
+    include("./functions/aggregate_functions.jl")
+    include("./forces/forces.jl")
+    include("neighbor.jl")
+    include("extract_info.jl")
+    include("run_event.jl")
 end
+# <=================================== REVIEW THE WARNINGS
 
 # using Pkg
 # Pkg.activate("./CellAggregate.jl/")
@@ -37,7 +46,7 @@ end
 # agg = Aggregate(
 #     [AggType(
 #         "HEK_1", 
-#         InteractionPar(Cubic(force_par,2.0,3.0), ContractilePar(cont_par,pi/4,0.08,1.0)),
+#         InteractionPar(Cubic(0.1,2.0,3.0), ContractilePar(0.1,pi/4,0.08,1.0)),
 #         rand(100,3) |> cu
 #     )], 
 #     [AggLocation("HEK_1",[0 0 0]),],
