@@ -1,6 +1,6 @@
-include("extract_info.jl")
+# include("extract_info.jl")
 
-using ProgressMeter
+# using ProgressMeter
 
 function run_test(agg::Aggregate, model::ModelSet, title::String,save_xyz, save_dat)
 
