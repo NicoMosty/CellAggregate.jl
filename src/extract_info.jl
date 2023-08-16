@@ -53,6 +53,49 @@ function neck_width_agg(data_cell)
     return (θ₀+θ₃₆₀)/2 + θ₁₈₀, θ₉₀+θ₂₇₀
 end
 
+function countour_func(img, tickness,N)
+    # From https://www.ijert.org/a-better-first-derivative-approach-for-edge-detection-2
+
+    # Extracting the grayscale on the image
+    img_channel = Gray.(.!(Gray.(img) .< Gray(img[1,1])*0.95))
+
+    # Extracting the Contour on the image
+    krnl_h = centered(Gray{Float32}[0 -1 -1 -1 0; 0 -1 -1 -1 0; 0 0 0 0 0; 0 1 1 1 0; 0 1 1 1 0]./12)
+    grad_h = imfilter(img_channel, krnl_h')
+
+    krnl_v = centered(Gray{Float32}[0 0 0 0 0; -1 -1 0 1 1;-1 -1 0 1 1;-1 -1 0 1 1;0 0 0 0 0 ]./12)
+    grad_v = imfilter(img_channel, krnl_v')
+
+    # Extracting the Contour on the image
+    final_img = (grad_h.^2) .+ (grad_v.^2)
+    final_img = Gray.(.!(Gray.(final_img) .> tickness))
+
+    # Extracting the index of each point
+    idx = CartesianIndices(size(final_img))[final_img .== 0]
+    arr_idx = hcat(getindex.(idx,2),getindex.(idx,1))
+
+    # Finding the center of center of mass
+    center_of_mass = sum(arr_idx, dims=1)/size(arr_idx,1)
+
+    # Putting the index in the center of mass
+    center_idx = arr_idx - repeat(center_of_mass, size(arr_idx, 1))
+
+    # # Put the points on cilidrical coordinates
+    # r = sqrt.(sum(center_idx .^ 2, dims=2))
+    # θ = [center_idx[i,2] >= 1 ? pi/2-atan(center_idx[i,1]/center_idx[i,2]) : 3*pi/2-atan(center_idx[i,1]/center_idx[i,2]) for i=1:size(center_idx,1)] 
+
+    cil_idx = hcat(
+        [center_idx[i,2] >= 1 ? pi/2-atan(center_idx[i,1]/center_idx[i,2]) : 3*pi/2-atan(center_idx[i,1]/center_idx[i,2]) for i=1:size(center_idx,1)] ,
+        sqrt.(sum(center_idx .^ 2, dims=2))
+    )
+
+    cil_idx = hcat(
+        [pi/N*(2*i-1)  for i=1:N],
+        [sum(cil_idx[:,2][2*pi/N*(i-1) .<= cil_idx[:,1] .< 2*pi/N*(i)])/size(cil_idx[:,2][2*pi/N*(i-1) .<= cil_idx[:,1] .< 2*pi/N*(i)],1) for i=1:N]
+    ) 
+    return (center_idx,cil_idx)
+end
+
 # REVIEW THIS
 # #=
 # -----------------------------------------------------------------------------
