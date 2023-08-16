@@ -1,16 +1,17 @@
 module CellAggregate
 
     using CUDA, Adapt, Dates, DelimitedFiles, ProgressMeter, InteractiveUtils, Images, FileIO
+
     export Cubic, LennardJones, Oriola # <- Make a macro to export all the forces on "./forces/forces_func.jl"
 
     export ContractilePar, InteractionPar
     export AggType, AggLocation, AggIndex, AggGeometry
+    export Sphere_HCP, clean_agg, show_aggregates
     export Aggregate, AggParameter, AggNeighbor, AggForce, AggOutput, AggLimit, AggSimulation
     export ModelSet, TimeModel, InputModel, OutputModel, ModelSet
-    export sphere_range
-    # , max_min_agg, neck_width_agg
+    export sphere_range, max_min_agg, neck_width_agg, countour_func
     
-    # export run_test
+    export dist_kernel!, sum_force!, run_test
 
     include("./functions/general_function.jl")
     include("./forces/forces_func.jl")
@@ -18,10 +19,11 @@ module CellAggregate
     include("./functions/aggregate_functions.jl")
     include("./forces/forces.jl")
     include("neighbor.jl")
-    # include("extract_info.jl")
-    # include("run_event.jl")
+    include("extract_info.jl")
+    include("run_event.jl")
+
+    include("sphere.jl")
 end
-# <=================================== REVIEW THE WARNINGS
 
 # using Pkg
 # Pkg.activate("./CellAggregate.jl/")
