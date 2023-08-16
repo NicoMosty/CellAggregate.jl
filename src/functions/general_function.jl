@@ -18,6 +18,14 @@ Three packages, `CUDA`, `Adapt`, and `DelimitedFiles`, that are used in CellAggr
 # using ProgressMeter
 # using InteractiveUtils
 
+function create_dir(name)
+    path = split(name,"/")
+    
+    if !(path[size(path,1)] in readdir(join(path[1:size(path,1)-1],"/")))
+        mkdir(name)
+    end
+end
+
 function check_data(path::String)
     if path in readdir()
         run(`rm $(path)`)
