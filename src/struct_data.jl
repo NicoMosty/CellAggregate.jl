@@ -629,5 +629,5 @@ Base.@kwdef mutable struct Aggregate
     end
 end
 
-# Adding Aggregates Functions
-include("functions/aggregate_functions.jl")
+# # Adding Aggregates Functions
+# include("functions/aggregate_functions.jl")
