@@ -4,6 +4,8 @@ module CellAggregate
 
     export Cubic, LennardJones, Oriola # <- Make a macro to export all the forces on "./forces/forces_func.jl"
 
+    export create_dir
+
     export ContractilePar, InteractionPar
     export AggType, AggLocation, AggIndex, AggGeometry
     export Sphere_HCP, clean_agg, show_aggregates
