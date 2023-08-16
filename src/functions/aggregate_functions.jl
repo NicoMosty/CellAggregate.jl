@@ -1,4 +1,6 @@
 """
+# show_aggregate
+
 The show_aggregates function takes an agg object of type Aggregate and displays its properties and attributes.
 
 The displayed information includes the type of aggregate, the index of the list of aggregates, the index of the 
@@ -44,6 +46,8 @@ function show_aggregates(agg::Aggregate)
 end
 
 """
+# FusionAggregate
+
 This function takes two arguments, init_set and model, and returns a new Aggregate struct that is a fusion of the 
 aggregates in init_set. If init_set contains only one aggregate, it creates a new Aggregate struct with two 
 locations that are separated by the radius of the aggregate along the x-axis. If init_set contains two aggregates, 
