@@ -3,28 +3,31 @@
 # using ProgressMeter
 
 function run_test(agg::Aggregate, model::ModelSet, title::String,save_xyz, save_dat)
-
-    open(model.Output.name_output*model.Output.name_output*".xyz", "w") do f end
-
-    open(model.Output.path_output*model.Output.name_output*".cart.dat", "w") do f
-        write(f, "# This file was created $(Dates.format(Dates.now(), "e, dd u yyyy HH:MM:SS")) \n")
-        write(f, "# Created by CellAggregate.jl \n")
-        write(f, "# Based on Cartesian Coordinates \n")
-        write(f, "@    xaxis label \"x position of each cell\"  \n")
-        write(f, "@    yaxis label \"y position of each cell\"  \n")
+    if save_xyz
+        open(model.Output.name_output*model.Output.name_output*".xyz", "w") do f end
     end
-    open(model.Output.path_output*model.Output.name_output*".sph.dat", "w") do f
-        write(f, "# This file was created $(Dates.format(Dates.now(), "e, dd u yyyy HH:MM:SS")) \n")
-        write(f, "# Created by CellAggregate.jl \n")
-        write(f, "# Based on Spherical Coordinates \n")
-        write(f, "@    xaxis label \"x position of each cell\"  \n")
-        write(f, "@    yaxis label \"y position of each cell\"  \n")
-    end
-    open(model.Output.path_output*model.Output.name_output*".nw.dat", "w") do f
-        write(f, "# This file was created $(Dates.format(Dates.now(), "e, dd u yyyy HH:MM:SS")) \n")
-        write(f, "# Created by CellAggregate.jl \n")
-        write(f, "# Based on Neck Width Dim of the Aggregate \n")
-        write(f, "! | t | Neck | Width   \n")
+
+    if save_dat
+        open(model.Output.path_output*model.Output.name_output*".cart.dat", "w") do f
+            write(f, "# This file was created $(Dates.format(Dates.now(), "e, dd u yyyy HH:MM:SS")) \n")
+            write(f, "# Created by CellAggregate.jl \n")
+            write(f, "# Based on Cartesian Coordinates \n")
+            write(f, "@    xaxis label \"x position of each cell\"  \n")
+            write(f, "@    yaxis label \"y position of each cell\"  \n")
+        end
+        open(model.Output.path_output*model.Output.name_output*".sph.dat", "w") do f
+            write(f, "# This file was created $(Dates.format(Dates.now(), "e, dd u yyyy HH:MM:SS")) \n")
+            write(f, "# Created by CellAggregate.jl \n")
+            write(f, "# Based on Spherical Coordinates \n")
+            write(f, "@    xaxis label \"x position of each cell\"  \n")
+            write(f, "@    yaxis label \"y position of each cell\"  \n")
+        end
+        open(model.Output.path_output*model.Output.name_output*".nw.dat", "w") do f
+            write(f, "# This file was created $(Dates.format(Dates.now(), "e, dd u yyyy HH:MM:SS")) \n")
+            write(f, "# Created by CellAggregate.jl \n")
+            write(f, "# Based on Neck Width Dim of the Aggregate \n")
+            write(f, "! | t | Neck | Width   \n")
+        end
     end
 
     @showprogress "$(title)..." for t=0:Int(model.Time.tₛᵢₘ/model.Time.dt)
@@ -114,13 +117,15 @@ function run_test(agg::Aggregate, model::ModelSet, title::String,save_xyz, save_
     if agg.Simulation.Limit.break_sim == CuArray([false])
         agg.Simulation.Output.neck_data  = hcat(agg.Simulation.Output.neck_data...) ./agg.Simulation.Output.width_data[1] .* 2
         agg.Simulation.Output.width_data = hcat(agg.Simulation.Output.width_data...) ./agg.Simulation.Output.width_data[1] .* 2
-        open(model.Output.path_output*model.Output.name_output*".nw.dat", "a") do f
-            writedlm(f,vcat(
-                    hcat(agg.Simulation.Output.time...),
-                    hcat(agg.Simulation.Output.neck_data...),
-                    hcat(agg.Simulation.Output.width_data...)
-                )' ./agg.Simulation.Output.width_data[1]
-            )
+        if save_dat
+            open(model.Output.path_output*model.Output.name_output*".nw.dat", "a") do f
+                writedlm(f,vcat(
+                        hcat(agg.Simulation.Output.time...),
+                        hcat(agg.Simulation.Output.neck_data...),
+                        hcat(agg.Simulation.Output.width_data...)
+                    )' ./agg.Simulation.Output.width_data[1]
+                )
+            end
         end
     elseif agg.Simulation.Limit.break_sim == CuArray([true])
         println("Breaking the Simulation (NaN Value or Bigger Values)")
