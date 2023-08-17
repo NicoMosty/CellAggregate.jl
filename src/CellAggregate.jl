@@ -13,7 +13,7 @@ module CellAggregate
     export ModelSet, TimeModel, InputModel, OutputModel, ModelSet
     export sphere_range, max_min_agg, neck_width_agg, countour_func
     
-    export dist_kernel!, sum_force!, run_test
+    export dist_kernel!, sum_force!, run_test, FusionAggregate
 
     include("./functions/general_function.jl")
     include("./forces/forces_func.jl")
