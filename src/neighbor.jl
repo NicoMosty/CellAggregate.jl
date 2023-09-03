@@ -15,7 +15,7 @@ maximum radius r_max, and to 0 otherwise.
     The indices i and j are computed based on the thread indices and block indices. The euclidean function is assumed 
     to compute the Euclidean distance between two points. The function returns nothing.
 """
-function dist_kernel!(idx,idx_cont,idx_sum,dist,points,r_max)
+function dist_kernel!(idx,idx_sum,dist,points,r_max)
 
     i  = (blockIdx().x-1) * blockDim().x + threadIdx().x
 
@@ -66,15 +66,18 @@ function dist_kernel!(idx,idx_cont,idx_sum,dist,points,r_max)
             end
         end
 
-        # Contractile Data
-        for j = 1:size(idx_cont,1)
-            idx_cont[j,i] = idx[rand(1:idx_sum[i]),i]
-        end
+
 
     end
-    sync_threads()
+    # sync_threads()
     return nothing
 end
+
+# OLD KERNEL FUNCTIONS
+        # # Contractile Data
+        # for j = 1:size(idx_cont,1)
+        #     idx_cont[j,i] = idx[rand(1:idx_sum[i]),i]
+        # end
 
 # """
 # # Contractile Kernel
