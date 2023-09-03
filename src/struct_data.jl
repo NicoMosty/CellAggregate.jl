@@ -336,8 +336,6 @@ end
 
 Base.@kwdef mutable struct AggOutput
     time
-    xy_data
-    θr_data
     neck_data
     width_data  
 end
@@ -407,10 +405,26 @@ Base.@kwdef mutable struct Aggregate
         contractile_loc = getproperty.(interaction_loc, :Contractile)
         loc = getproperty.(location,:Location)
 
+
+        radius_loc =[]
+        for j = 1:size(pos_loc,1)
+            push!(radius_loc, (extrema(pos_loc[j])[2] - extrema(pos_loc[j])[1] + 1)/2)
+        end
+
+        outline_pos = []
+        for j = 1:size(pos_loc,1)
+            out_l = ifelse.(
+                [euclidean(pos_loc[j],i) for i=1:size(pos_loc[j],1)] .> radius_loc[j]*model.Input.outer_ratio,
+                1,2
+            )
+            push!(outline_pos, out_l)
+        end
+        outline_pos = vcat(outline_pos...)
+
         # Joining position of each aggregate according to the pos_loc calculation
         pos = vcat(pos_loc...)
         # Joining aggregate radius of each cell according to the pos_loc calculation
-        radius = repeat_prop(pos_loc, radius_loc)
+        # radius = repeat_prop(pos_loc, radius_loc)
 
         """
         # index
@@ -473,11 +487,8 @@ Base.@kwdef mutable struct Aggregate
         """
         range_x = extrema(Matrix(pos)[:,1])
         geometry = AggGeometry(
-            radius,
-            ifelse.(
-                [euclidean(Matrix(pos),i) for i=1:size(pos,1)] .> radius*model.Input.outer_ratio,
-                1,2
-            ),
+            radius_loc,
+            outline_pos[:,:], 
             range_x
         )
 
@@ -617,11 +628,9 @@ Base.@kwdef mutable struct Aggregate
             neighbor_cell,
             force_cell,
             AggOutput(
-                Vector(),
-                Vector(),
-                Vector(),
-                Vector(),
-                Vector()
+                Array{Float64}([]),
+                Array{Float64}([]),
+                Array{Float64}([])
             )
         )
 
