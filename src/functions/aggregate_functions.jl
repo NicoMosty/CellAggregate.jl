@@ -55,14 +55,17 @@ it creates a new Aggregate struct with two locations that are separated by the r
     
 The model argument is the simulation model to use for the new Aggregate struct.
 """
-function FusionAggregate(init_set, model) 
-    radius_loc = getproperty.(init_set,:Radius)
+function FusionAggregate(init_set, model, dist) 
+    # radius_loc = getproperty.(init_set,:Radius)
+    max_min_x = extrema(init_set[1].Position[:,1])
+    radius_loc = (max_min_x[2] - max_min_x[1])/2
+
     if size(init_set, 1) == 1
         fusion_agg = Aggregate(
             init_set,
             [
-                AggLocation(init_set[1].Name,[-radius_loc[1]+2 0  0]),
-                AggLocation(init_set[1].Name,[ radius_loc[1]-2 0  0])
+                AggLocation(init_set[1].Name,[-radius_loc[1]+(dist-1) 0  0]),
+                AggLocation(init_set[1].Name,[ radius_loc[1]-(dist-1) 0  0])
             ],
             model
         )
@@ -70,8 +73,8 @@ function FusionAggregate(init_set, model)
         fusion_agg = Aggregate(
             init_set,
             [
-                AggLocation(init_set[1].Name,[-radius_loc[1]+1 0  0]),
-                AggLocation(init_set[2].Name,[ radius_loc[2]-1 0  0])
+                AggLocation(init_set[1].Name,[-radius_loc[1]+dist 0  0]),
+                AggLocation(init_set[2].Name,[ radius_loc[2]-dist 0  0])
             ],
             model
         )
