@@ -30,6 +30,7 @@ function angle_to_pol(pol,i)
     z = cos(pol[i,1])
     return (x,y,z)
 end
+
 function sum_force!(points,force,pol,dpol,N_i,idx_sum,idx,force_par,cont_par,ψₜ,ψₘ,ω,dt,max_grid,break_sim) #test
     # A -> Angle between parallel and pernedicular angle in force contractile
     # B -> Opening angle of the polarization ratio
@@ -91,6 +92,22 @@ function sum_force!(points,force,pol,dpol,N_i,idx_sum,idx,force_par,cont_par,ψ�
             end
         end
 
+        # Adding the force on each cell
+        points[i,k] += force[i,k] * dt
+
+    end
+
+    return nothing
+
+end
+
+# OLD KERNEL FUNCTIONS
+        # # For break the kernel when the values are out of the grid
+        # if points[i,k] > max_grid || isnan(points[i,k])
+        #     break_sim[1,1] = true
+        # end
+
+
         # <-------------------------------------------------------------------------------- THIS
         # Adding Contractile Force (Me without Area)
         
@@ -112,19 +129,7 @@ function sum_force!(points,force,pol,dpol,N_i,idx_sum,idx,force_par,cont_par,ψ�
         # end
         # <-------------------------------------------------------------------------------- THIS
 
-        # Adding the force on each cell
-        points[i,k] += force[i,k] * dt
-
-        # For break the kernel when the values are out of the grid
-        if points[i,k] > max_grid || isnan(points[i,k])
-            break_sim[1,1] = true
-        end
-
-    end
-
-    return nothing
-
-end
+# <------------------------------
 # function sum_force!(idx,idx_cont,idx_sum,points,force,force_par,cont_par,dt,t_knn,pol_mat)
 #     # pol_mat
 #     # Defining Index for kernel
@@ -173,68 +178,4 @@ end
         
 #     end
 #     return nothing
-# end
-
-
-################################ NEW ####################################
-# using LinearAlgebra: norm
-# using NearestNeighbors
-# using Shuffle
-
-# function cpu_force(X, idxs, r_max, fp, K )
-#     # Initialise displacement array
-#     global dX = zeros(Float64, size(X)[1], 3)
-
-#     for i in 1:size(X)[1]
-#         # Initialise variables
-#         global Xi = X[i,1:3]
-#         for j in idxs[:,i]
-#             if i != j
-#                 global r = Xi - X[j,:]
-#                 global dist = norm(r)
-#                 # Calculate attraction/repulsion force differential here
-#                 if dist < r_max
-#                     global F = - K*(dist-r_max)*(dist-r_max)*(dist - s)
-#                     dX[i,:] =  dX[i,:] + r/dist * F
-#                 end 
-#             end
-#         end
-#     end
-#     return dX
-# end
-
-# function cu_force(t::Time, c::Contractile, Agg::Aggregate)
-#     # Definig Variables for calculing dX
-#     global Agg
-
-#     # Calculating distance for random forces (contractile)
-#     Agg.Force.r_p = Agg.Position.X .- 
-#                         Agg.Position.X[
-#                             Agg.Neighbor.rand_idx[
-#                                 Int.(mod(
-#                                     Agg.t, size(Agg.Position.X, 1)
-#                                 ) .+ 1),
-#                             :],
-#                         :]
-    
-#     # Finding Distances/Norm for random forces
-#     Agg.Force.dist_p = sum(Agg.Force.r_p .^ 2, dims=2).^ 0.5
-
-#     # Finding distances
-#     Agg.Force.r = reshape(
-#             repeat(Agg.Position.X, inner=(Agg.ParNeighbor.nn,1)), 
-#             Agg.ParNeighbor.nn, size(Agg.Position.X)[1], 3
-#         ) .- 
-#         Agg.Position.X[getindex.(Agg.Neighbor.idx,1),:]
-
-#     # Finding Distances(Norm)
-#     Agg.Force.dist = ((sum(Agg.Force.r .^ 2, dims=3)) .^ 0.5)[:,:,1]
-
-#     # # Finding forces for each cell
-#     Agg.Force.F = force(Agg.Force.dist) .* Agg.Force.r ./ Agg.Force.dist
-
-#     # # Calculating de dX   -> dX[i,:] +=  r/dist * F
-#     Agg.Position.dX = sum(Agg.Force.F[2:end,:,:]; dims=1)[1,:,:] -                                       
-#                         c.fₚ .* (Agg.Force.r_p ./ Agg.Force.dist_p)
-#     synchronize()
 # end
