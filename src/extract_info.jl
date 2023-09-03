@@ -53,11 +53,11 @@ function neck_width_agg(data_cell)
     return (θ₀+θ₃₆₀)/2 + θ₁₈₀, θ₉₀+θ₂₇₀
 end
 
-function countour_func(img, tickness,N)
+function countour_func(img, gray_factor,tickness,N)
     # From https://www.ijert.org/a-better-first-derivative-approach-for-edge-detection-2
 
     # Extracting the grayscale on the image
-    img_channel = Gray.(.!(Gray.(img) .< Gray(img[1,1])*0.95))
+    img_channel = Gray.(.!(Gray.(img) .< Gray(img[1,1])*gray_factor))
 
     # Extracting the Contour on the image
     krnl_h = centered(Gray{Float32}[0 -1 -1 -1 0; 0 -1 -1 -1 0; 0 0 0 0 0; 0 1 1 1 0; 0 1 1 1 0]./12)
