@@ -230,14 +230,12 @@ parameters `Interaction` and position of each cell on the aggregate.
 Base.@kwdef mutable struct AggType
     Name        :: String
     Interaction :: InteractionPar
-    Radius
     Position
     Type
     function AggType(name, interaction,position)
         type = typeof(position)
         position = Matrix(position)
-        radius = find_radius(position)
-        new(name,interaction, radius, position, type)
+        new(name,interaction, position, type)
     end
 end
 
@@ -318,7 +316,6 @@ The AggSimulation structure holds AggParameter, AggNeighbor and AggForce structu
 Base.@kwdef mutable struct AggParameter
     Force
     Contractile
-    Radius
 end
 Base.@kwdef mutable struct AggNeighbor       
     idx_red 
@@ -331,7 +328,7 @@ Base.@kwdef mutable struct AggForce
     N_i
     F
     dX
-    dPol
+    Pol_angle
 end
 
 Base.@kwdef mutable struct AggOutput
@@ -397,7 +394,6 @@ Base.@kwdef mutable struct Aggregate
         The Index field is set based on the Type and Name properties of the aggregate at the given location.
         """
         pos_loc = filter_prop(agg_type,location,"Position")
-        radius_loc = filter_prop(agg_type,location,"Radius")
         type_loc = index_prop(agg_type,location)
         name_loc = filter_prop(agg_type,location,"Name")
         interaction_loc = filter_prop(agg_type,location,"Interaction")
@@ -569,8 +565,7 @@ Base.@kwdef mutable struct Aggregate
                     ))
                     for j=1:size(fieldnames(ContractilePar),1)
                 ]...
-            ),
-            CPUtoGPU(data_type,vcat([agg_type[i].Radius' for i=1:size(agg_type,1)]...))
+            )
         )
 
         """
@@ -609,11 +604,11 @@ Base.@kwdef mutable struct Aggregate
                 • `T`: the element type of the `dX` and `F` arrays. Default is `Float64`.
         """
         force_cell = AggForce(
-            dX       = CPUtoGPU(data_type, zeros(size(pos))),
-            F        = CPUtoGPU(data_type, zeros(size(pos))),
-            Pol      = CPUtoGPU(data_type, zeros(size(pos))) ,
-            dPol      = CPUtoGPU(data_type, zeros(size(pos))),
-            N_i      = CPUtoGPU(data_type, zeros(1,size(pos,1))) 
+            dX         = CPUtoGPU(data_type, zeros(size(pos))),
+            F          = CPUtoGPU(data_type, zeros(size(pos))),
+            Pol        = CPUtoGPU(data_type, zeros(size(pos))) ,
+            Pol_angle  = CPUtoGPU(data_type, hcat([[angle_init()...] for i=1:size(pos,1)]...)'),
+            N_i        = CPUtoGPU(data_type, zeros(1,size(pos,1))) 
         )
 
         agg_limit = AggLimit(
