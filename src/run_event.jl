@@ -3,6 +3,8 @@
 # using ProgressMeter
 
 function run_test(agg::Aggregate, model::ModelSet, title::String,save_xyz, save_dat, xyz_type)
+    ProgressMeter.ijulia_behavior(:clear)
+    
     if save_xyz
         open(model.Output.path_output*model.Output.name_output*".xyz", "w") do f end
     end
@@ -60,7 +62,7 @@ function run_test(agg::Aggregate, model::ModelSet, title::String,save_xyz, save_
                     agg.Position,
                     agg.Simulation.Force.F,
                     agg.Simulation.Force.Pol,
-                    agg.Simulation.Force.dPol,
+                    agg.Simulation.Force.Pol_angle,
                     agg.Simulation.Force.N_i,
                     agg.Simulation.Neighbor.idx_sum,
                     agg.Simulation.Neighbor.idx_red,

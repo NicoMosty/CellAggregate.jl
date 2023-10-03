@@ -53,7 +53,7 @@ function neck_width_agg(data_cell)
     return (θ₀+θ₃₆₀)/2 + θ₁₈₀, θ₉₀+θ₂₇₀
 end
 
-function countour_func(img, gray_factor,tickness,N)
+function countour_func(img, gray_factor,tickness_contour,rot_angle, number_data)
     # From https://www.ijert.org/a-better-first-derivative-approach-for-edge-detection-2
 
     # Extracting the grayscale on the image
@@ -68,7 +68,7 @@ function countour_func(img, gray_factor,tickness,N)
 
     # Extracting the Contour on the image
     final_img = (grad_h.^2) .+ (grad_v.^2)
-    final_img = Gray.(.!(Gray.(final_img) .> tickness))
+    final_img = Gray.(.!(Gray.(final_img) .> tickness_contour))
 
     # Extracting the index of each point
     idx = CartesianIndices(size(final_img))[final_img .== 0]
@@ -80,9 +80,8 @@ function countour_func(img, gray_factor,tickness,N)
     # Putting the index in the center of mass
     center_idx = arr_idx - repeat(center_of_mass, size(arr_idx, 1))
 
-    # # Put the points on cilidrical coordinates
-    # r = sqrt.(sum(center_idx .^ 2, dims=2))
-    # θ = [center_idx[i,2] >= 1 ? pi/2-atan(center_idx[i,1]/center_idx[i,2]) : 3*pi/2-atan(center_idx[i,1]/center_idx[i,2]) for i=1:size(center_idx,1)] 
+    # Rotating the image
+    center_idx = (rot_mat(rot_angle) * center_idx')'
 
     cil_idx = hcat(
         [center_idx[i,2] >= 1 ? pi/2-atan(center_idx[i,1]/center_idx[i,2]) : 3*pi/2-atan(center_idx[i,1]/center_idx[i,2]) for i=1:size(center_idx,1)] ,
@@ -90,8 +89,8 @@ function countour_func(img, gray_factor,tickness,N)
     )
 
     cil_idx = hcat(
-        [pi/N*(2*i-1)  for i=1:N],
-        [sum(cil_idx[:,2][2*pi/N*(i-1) .<= cil_idx[:,1] .< 2*pi/N*(i)])/size(cil_idx[:,2][2*pi/N*(i-1) .<= cil_idx[:,1] .< 2*pi/N*(i)],1) for i=1:N]
+        [pi/number_data*(2*i-1)  for i=1:number_data],
+        [sum(cil_idx[:,2][2*pi/number_data*(i-1) .<= cil_idx[:,1] .< 2*pi/number_data*(i)])/size(cil_idx[:,2][2*pi/number_data*(i-1) .<= cil_idx[:,1] .< 2*pi/number_data*(i)],1) for i=1:number_data]
     ) 
     return (center_idx,cil_idx)
 end
