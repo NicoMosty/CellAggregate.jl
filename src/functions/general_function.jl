@@ -436,3 +436,59 @@ max_min_agg(data,d_data) = ceil(data[1])-5:d_data:floor(data[2])+5
 # function step(rmin, rmax, r)
 #     return (sign(r-rmin)-sign(r-rmax))/2
 # end
+
+# rand_to_angle(D,dt) = (sqrt(2*D*dt)*randn(), sqrt(2*D*dt)*randn())
+# angle_init()        = (acos(2*rand()-1),2*pi*(2*rand()-1))
+# angle_to_pol(pol)   = (sin(pol[1])*cos(pol[2]), sin(pol[1])*sin(pol[2]), cos(pol[1]))
+# function sum_angle(a, da) 
+#     x = a[1] + da[1]
+#     y = mod(a[2] + da[2],2π)
+#     if x > 0
+#         return (π-abs(x-π),y)
+#     else
+#         return (π-abs(x+π),y)
+#     end
+# end
+
+angle_init()        = (2*pi*rand(), acos(2*rand()-1))
+rand_to_angle(D,dt) = (2*pi*rand(), sqrt(2*D)*dt*abs(randn()))
+angle_to_pol(pol)   = (sin(pol[2])*cos(pol[1]), sin(pol[2])*sin(pol[1]), cos(pol[2]))
+
+function rotation(vec, b, a)
+    return (
+        cos(b)*cos(a)*vec[1]  - sin(b)*vec[2] + cos(b)*sin(a)*vec[3],
+        sin(b)*cos(a)*vec[1]  + cos(b)*vec[2] + sin(b)*sin(a)*vec[3],
+              -sin(a)*vec[1]  +      0        +        cos(a)*vec[3]
+    )
+end
+
+rot_mat(rot_angle) = [cos(rot_angle) -sin(rot_angle); sin(rot_angle) cos(rot_angle)]
+
+function a_cos(x)
+    if x > 0
+    return(acos(x))
+    else
+    return(pi - acos(-x))
+    end
+end
+
+function a_tan(x, y)
+    if y >= 0
+        return (  pi/2 - atan(x/y))
+    else
+        return (3*pi/2 - atan(x/y))
+    end
+end
+
+function cart_to_angle(q)
+    if     q == (0.0, 0.0, 1.0)
+        return(2*pi*rand(),0.0)
+    elseif q == (0.0, 0.0, -1.0)
+        return(2*pi*rand(),pi)
+    else
+        return(
+            a_tan(q[1],q[2]),
+            a_cos(q[3])
+        )
+    end
+end

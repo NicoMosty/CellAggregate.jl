@@ -21,17 +21,8 @@ it to the total force on the point. After iterating over all neighbors, the func
 The function writes the computed force to the output array force. Finally, the position of each point is updated based on the total force acting on that 
 point and the time step.
 """
-function rand_to_angle()
-    return (acos(2*rand()-1),2*pi*(2*rand()-1),1)
-end
-function angle_to_pol(pol,i)
-    x = sin(pol[i,1])*cos(pol[i,2])
-    y = sin(pol[i,1])*sin(pol[i,2])
-    z = cos(pol[i,1])
-    return (x,y,z)
-end
 
-function sum_force!(points,force,pol,dpol,N_i,idx_sum,idx,force_par,cont_par,ψₜ,ψₘ,ω,dt,max_grid,break_sim) #test
+function sum_force!(points,force,pol,pol_angle,N_i,idx_sum,idx,force_par,cont_par,ψₜ,ψₘ,ω,dt,max_grid,break_sim) #test
     # A -> Angle between parallel and pernedicular angle in force contractile
     # B -> Opening angle of the polarization ratio
 
@@ -43,11 +34,11 @@ function sum_force!(points,force,pol,dpol,N_i,idx_sum,idx,force_par,cont_par,ψ�
         # Cleaning force
         force[i,k] = 0
         
-        dpol[i,1], dpol[i,2], dpol[i,3] = rand_to_angle()
+        # Calculation of Polzrization
+        pol[i,1], pol[i,2] ,pol[i,3] = rotation(angle_to_pol(rand_to_angle(ω[i],dt)),pol_angle[i,1], pol_angle[i,2])
         sync_threads()
-        dpol[i,1], dpol[i,2], dpol[i,3] = angle_to_pol(dpol,i)
-        pol[i,k] = (1-ω[i])*pol[i,k] + ω[i]*dpol[i,k]
-        
+        pol_angle[i,1], pol_angle[i,2] = cart_to_angle((pol[i,1], pol[i,2] ,pol[i,3]))
+
         # Iterate on each row
         for j=1:idx_sum[i]
         # for j=1:1
@@ -55,12 +46,7 @@ function sum_force!(points,force,pol,dpol,N_i,idx_sum,idx,force_par,cont_par,ψ�
 
                 # # Finding norm and distances
                 dist = euclidean(points,i,idx[j,i])
-                norm = (points[i,k]-points[idx[j,i],k])/dist
-
-                # Calculating forces on each cell
-                if dist < force_par.rₘₐₓ[i]
-                    force[i,k] += force_func(force_par,i,dist) * norm
-                end
+                norm = (points[idx[j,i],k]-points[i,k])/dist
                 
                 # Calculating angle between polarization vector and  ...
                 N_i[i] = 0
@@ -68,25 +54,24 @@ function sum_force!(points,force,pol,dpol,N_i,idx_sum,idx,force_par,cont_par,ψ�
                     N_i[i] += (points[i,m]-points[idx[j,i],m])/dist * pol[i,m]
                 end
 
-                # if cos(B) < N_i[i]
+
+                # if cos(ψₜ[i]) < N_i[i] < 0.99
                 if cos(ψₜ[i] - ψₘ[i]) > N_i[i] > cos(ψₜ[i] + ψₘ[i])
-                    # test[i,k] += 1
-                #     <-------------------------------------------------------------------------------- THIS
-                    force[i,k]         -= cont_par[i]*pol[i,k]
-                    # test[i,k] += 1
-                    # force[i,k]         -= cont_par[i]*norm
-                    # force[idx[j,i],k]  -= cont_par[i]*pol[i,k]
-                    # sync_threads()
-                #     <-------------------------------------------------------------------------------- THIS
-                    # force[i,k]        -= cont_par[i]*( 
-                    #                             sin(A)/(sqrt(1-N_i[i]^2))*norm
-                    #                         +  (cos(A) - sin(A)*N_i[i]/(sqrt(1-N_i[i]^2)))*pol[i,k]        
-                    #                         )
-                #     force[idx[j,i],k] -= cont_par[i]*( 
-                #                                 sin(A)/(sqrt(1-N_i[ti]^2))*norm[ti,tk]  
-                #                             +  (cos(A) - sin(A)*N_i[ti]/(sqrt(1-N_i[ti]^2)))*pol[i,k]        
-                #                             )
-                #     <-------------------------------------------------------------------------------- THIS
+                    # prot_force = cont_par[i]* norm
+                    prot_force = cont_par[i]*pol[i,k]
+                    # <-------------------------------------------------------------------------------- THIS
+                    # prot_force = cont_par[i]*( 
+                    #     (cos(ψₘ[i]) + sin(ψₘ[i])*N_i[i]/(sqrt(1-N_i[i]^2)))*pol[i,k]    
+                    #     - sin(ψₘ[i])/(sqrt(1-N_i[i]^2))*norm    
+                    #     )
+                    # <-------------------------------------------------------------------------------- THIS
+                    force[i,k]        -= prot_force
+                    force[idx[j,i],k] += prot_force
+                end
+
+                # Calculating forces on each cell
+                if dist < force_par.rₘₐₓ[i]
+                    force[i,k] -= force_func(force_par,i,dist) * norm
                 end
 
             end
