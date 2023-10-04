@@ -6,29 +6,17 @@ function run_test(agg::Aggregate, model::ModelSet, title::String,save_xyz, save_
     ProgressMeter.ijulia_behavior(:clear)
     
     if save_xyz
-        open(model.Output.path_output*model.Output.name_output*".xyz", "w") do f end
+        create_dir(model.Output.path_output*"/xyz_data")
+        open(model.Output.path_output*"/xyz_data/"*model.Output.name_output*".xyz", "w") do f end
     end
 
     if save_dat
-        # open(model.Output.path_output*model.Output.name_output*".cart.dat", "w") do f
-        #     write(f, "# This file was created $(Dates.format(Dates.now(), "e, dd u yyyy HH:MM:SS")) \n")
-        #     write(f, "# Created by CellAggregate.jl \n")
-        #     write(f, "# Based on Cartesian Coordinates \n")
-        #     write(f, "@    xaxis label \"x position of each cell\"  \n")
-        #     write(f, "@    yaxis label \"y position of each cell\"  \n")
-        # end
-        # open(model.Output.path_output*model.Output.name_output*".sph.dat", "w") do f
-        #     write(f, "# This file was created $(Dates.format(Dates.now(), "e, dd u yyyy HH:MM:SS")) \n")
-        #     write(f, "# Created by CellAggregate.jl \n")
-        #     write(f, "# Based on Spherical Coordinates \n")
-        #     write(f, "@    xaxis label \"x position of each cell\"  \n")
-        #     write(f, "@    yaxis label \"y position of each cell\"  \n")
-        # end
-        open(model.Output.path_output*model.Output.name_output*".nw.dat", "w") do f
+        create_dir(model.Output.path_output*"/nw_data")
+        open(model.Output.path_output*"/nw_data/"*model.Output.name_output*".nw.dat", "w") do f
             write(f, "# This file was created $(Dates.format(Dates.now(), "e, dd u yyyy HH:MM:SS")) \n")
             write(f, "# Created by CellAggregate.jl \n")
             write(f, "# Based on Neck Width Dim of the Aggregate \n")
-            write(f, "! | t | Neck | Width   \n")
+            write(f, "! | t | Neck | Width | r_2   \n")
         end
     end
 
@@ -72,27 +60,14 @@ function run_test(agg::Aggregate, model::ModelSet, title::String,save_xyz, save_
                     agg.Simulation.Parameter.Contractile.ψₘ,
                     agg.Simulation.Parameter.Contractile.ω,
                     model.Time.dt,
-                    agg.Simulation.Limit.max_grid,
-                    agg.Simulation.Limit.break_sim
+                    model.Input.a
                 )
             )
     
             if t%Int(model.Time.tₛᵢₘ/model.Time.nₛₐᵥₑ/model.Time.dt) == 0
-                # # println("▲ Save")
-                # push!(agg.Simulation.Output.time,t*model.Time.dt)
-
-                # max_min = max_min_agg(agg.Position,40,10,2)
-                # push!(agg.Simulation.Output.xy_data,max_min)
-
-                # sph_data = cart_to_sph(max_min)
-                # push!(agg.Simulation.Output.θr_data,sph_data)
-
-                # neck_width = neck_width_agg(sph_data)
-                # push!(agg.Simulation.Output.neck_data,[neck_width[2]])
-                # push!(agg.Simulation.Output.width_data,[neck_width[1]])
 
                 if save_xyz
-                    open(model.Output.path_output*model.Output.name_output*".xyz", "a") do f
+                    open(model.Output.path_output*"/xyz_data/"*model.Output.name_output*".xyz", "a") do f
                         write(f, "$(size(agg.Position, 1))\n")
                         write(f, "t=$(t*model.Time.dt)\n")
                         writedlm(f,hcat(xyz_type,Matrix(agg.Position)), ' ')
@@ -103,22 +78,31 @@ function run_test(agg::Aggregate, model::ModelSet, title::String,save_xyz, save_
                     data_cell = Matrix(agg.Position)
 
                     polar_idx = hcat(
-                        [data_cell[i,2] >= 1 ? pi/2-atan(data_cell[i,1]/data_cell[i,2]) : 3*pi/2-atan(data_cell[i,1]/data_cell[i,2]) for i=1:size(data_cell,1)] ,
+                        [data_cell[i,2] >= 0 ? pi/2-atan(data_cell[i,1]/data_cell[i,2]) : 3*pi/2-atan(data_cell[i,1]/data_cell[i,2]) for i=1:size(data_cell,1)] ,
                         sqrt.(sum(data_cell .^ 2, dims=2))
                     )
             
-                    lin_idx = hcat(cos.(2 .*polar_idx[:,1]),polar_idx[:,2])
+                    max_data = hcat(
+                        [i+pi/model.Output.N_data for i = 0:2*pi/model.Output.N_data:2*pi*(1 - 1/model.Output.N_data)],
+                        [
+                            size(polar_idx[:,2][i .< polar_idx[:,1] .<= i+2*pi/model.Output.N_data],1) > 0 ? 
+                            maximum(polar_idx[:,2][i .< polar_idx[:,1] .<= i+2*pi/model.Output.N_data])  : 
+                            0 for i = 0:2*pi/model.Output.N_data:2*pi*(1 - 1/model.Output.N_data)
+                        ]
+                    )
+
+                    lin_idx = hcat(
+                        abs.(cos.(max_data[:,1])) .^ model.Output.N_lin,
+                        max_data[:,2]
+                    )
+                    lineal_eq = lin_eq(lin_idx)
                     
-                    MAX = maximum(lin_idx[lin_idx[:,1] .> 0.95,2])
-                    MIN_list = lin_idx[lin_idx[:,1] .< -0.95,2]
-                    
-                    MIN = 0
-                    if size(MIN_list,1) > 0
-                        global MIN = maximum(MIN_list)
-                    end
-    
+                    r_2 = R_2(lineal_eq, lin_idx)
+
+                    MIN, MAX = min_max_val(lin_idx)
+                        
                     if size(agg.Simulation.Output.time, 1) == 0
-                        global NMAX = maximum(lin_idx[lin_idx[:,1] .> 0.95,2])
+                        global NMAX = MAX
                     end
     
                     MAX = MAX/NMAX; MIN = MIN/NMAX;
@@ -126,9 +110,11 @@ function run_test(agg::Aggregate, model::ModelSet, title::String,save_xyz, save_
                     push!(agg.Simulation.Output.time, t)
                     push!(agg.Simulation.Output.neck_data, MIN)
                     push!(agg.Simulation.Output.width_data, MAX)
+                    push!(agg.Simulation.Output.r2_data, r_2)
 
-                    open(model.Output.path_output*model.Output.name_output*".nw.dat", "a") do f
-                        writedlm(f,[t*model.Time.dt, MIN, MAX]', ' ')
+                    open(model.Output.path_output*"/nw_data/"*model.Output.name_output*".nw.dat", "a") do f
+                    # open(model.Output.path_output*model.Output.name_output*".nw.dat", "a") do f
+                        writedlm(f,[t*model.Time.dt, MIN, MAX, r_2]', ' ')
                     end
 
                     # open(model.Output.path_output*model.Output.name_output*".cart.dat", "a") do f
