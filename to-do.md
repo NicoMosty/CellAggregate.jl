@@ -3,5 +3,3 @@
 
 # Test
 ### kernelCUDA/FixedNearestNeighbor/Forces.ipynb
-
-TEST -> 03 Oct 2023 -> New HDD
