@@ -492,3 +492,5 @@ function cart_to_angle(q)
         )
     end
 end
+
+# Extract Functions
