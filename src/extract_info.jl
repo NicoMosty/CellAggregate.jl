@@ -43,16 +43,6 @@ function max_min_agg(data_cell,N, bias_lenght, bias_size)
     return min_max
 end
 
-function neck_width_agg(data_cell)
-    θ₀   = maximum(data_cell[:,2][0      .<= data_cell[:,1] .< pi/4  ])
-    θ₉₀  = minimum(data_cell[:,2][pi/4   .<= data_cell[:,1] .< 3*pi/4])
-    θ₁₈₀ = maximum(data_cell[:,2][3*pi/4 .<= data_cell[:,1] .< 5*pi/4])
-    θ₂₇₀ = minimum(data_cell[:,2][5*pi/4 .<= data_cell[:,1] .< 7*pi/4])
-    θ₃₆₀ = maximum(data_cell[:,2][7*pi/4 .<= data_cell[:,1] .< 2*pi  ])
-
-    return (θ₀+θ₃₆₀)/2 + θ₁₈₀, θ₉₀+θ₂₇₀
-end
-
 function countour_func(img, gray_factor,tickness_contour,rot_angle, number_data)
     # From https://www.ijert.org/a-better-first-derivative-approach-for-edge-detection-2
 
@@ -94,6 +84,44 @@ function countour_func(img, gray_factor,tickness_contour,rot_angle, number_data)
     ) 
     return (center_idx,cil_idx)
 end
+
+# review this
+
+linearized_func(data,N) = abs(cos(data))^N
+mean_val(x) = sum(x)/size(x,1)
+
+function compare_filenames(a::AbstractString, b::AbstractString)
+    # Extract numeric parts using regular expressions
+    a_num = parse(Int, match(r"\d+", a).match)
+    b_num = parse(Int, match(r"\d+", b).match)
+    
+    return a_num < b_num
+end
+
+function min_max_val(data)
+    return(
+        mean_val(data[:,2][data[:,1] .< 0.05]),
+        mean_val(data[:,2][data[:,1] .> 0.95])
+    )
+end
+
+function polar_to_lin(data, N)
+    return hcat(
+        linearized_func.(data[:,1],N),
+        data[:,2]
+    )
+end
+
+function lin_eq(data)
+    min, max = min_max_val(data)
+
+    return hcat(
+        data[:,1],
+        (max-min) .* data[:,1] .+ min
+    )
+end
+
+R_2(data, predicted) = 1 - sum((data[:,2] - predicted[:,2]) .^2)/sum((data[:,2] .-sum(data[:,2])/size(data[:,2],1)) .^2)
 
 # REVIEW THIS
 # #=
