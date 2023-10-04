@@ -22,7 +22,7 @@ The function writes the computed force to the output array force. Finally, the p
 point and the time step.
 """
 
-function sum_force!(points,force,pol,pol_angle,N_i,idx_sum,idx,force_par,cont_par,ψₜ,ψₘ,ω,dt,max_grid,break_sim) #test
+function sum_force!(points,force,pol,pol_angle,N_i,idx_sum,idx,force_par,cont_par,ψₜ,ψₘ,ω,dt,a) #test
     # A -> Angle between parallel and pernedicular angle in force contractile
     # B -> Opening angle of the polarization ratio
 
@@ -58,7 +58,7 @@ function sum_force!(points,force,pol,pol_angle,N_i,idx_sum,idx,force_par,cont_pa
                 # if cos(ψₜ[i]) < N_i[i] < 0.99
                 if cos(ψₜ[i] - ψₘ[i]) > N_i[i] > cos(ψₜ[i] + ψₘ[i])
                     # prot_force = cont_par[i]* norm
-                    prot_force = cont_par[i]*pol[i,k]
+                    prot_force = a*(dist-force_par.rₘₐₓ[i])^2*cont_par[i]*pol[i,k]
                     # <-------------------------------------------------------------------------------- THIS
                     # prot_force = cont_par[i]*( 
                     #     (cos(ψₘ[i]) + sin(ψₘ[i])*N_i[i]/(sqrt(1-N_i[i]^2)))*pol[i,k]    
@@ -71,7 +71,7 @@ function sum_force!(points,force,pol,pol_angle,N_i,idx_sum,idx,force_par,cont_pa
 
                 # Calculating forces on each cell
                 if dist < force_par.rₘₐₓ[i]
-                    force[i,k] -= force_func(force_par,i,dist) * norm
+                    force[i,k] -= a*force_func(force_par,i,dist) * norm
                 end
 
             end
