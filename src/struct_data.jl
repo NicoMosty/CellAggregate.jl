@@ -178,6 +178,7 @@ Base.@kwdef mutable struct TimeModel
     nₛₐᵥₑ       :: Int64
 end 
 Base.@kwdef mutable struct InputModel
+    a               :: Float64
     outer_ratio     :: Float64
     path_input      :: String
 end 
@@ -185,6 +186,8 @@ Base.@kwdef mutable struct OutputModel
     name_output      :: String
     path_output      :: String
     d_saved          :: Float64
+    N_data           :: Int64
+    N_lin            :: Float64
 end 
 Base.@kwdef mutable struct ModelSet
     Time        :: TimeModel
@@ -334,7 +337,8 @@ end
 Base.@kwdef mutable struct AggOutput
     time
     neck_data
-    width_data  
+    width_data
+    r2_data
 end
 
 Base.@kwdef mutable struct AggLimit
@@ -623,6 +627,7 @@ Base.@kwdef mutable struct Aggregate
             neighbor_cell,
             force_cell,
             AggOutput(
+                Array{Float64}([]),
                 Array{Float64}([]),
                 Array{Float64}([]),
                 Array{Float64}([])
