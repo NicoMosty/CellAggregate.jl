@@ -35,7 +35,9 @@ function sum_force!(points,force,pol,pol_angle,N_i,idx_sum,idx,force_par,cont_pa
         force[i,k] = 0
         
         # Calculation of Polzrization
-        pol[i,1], pol[i,2] ,pol[i,3] = rotation(angle_to_pol(rand_to_angle(ω[i],dt)),pol_angle[i,1], pol_angle[i,2])
+        θ_prev, φ_prev = pol_angle[i,1], pol_angle[i,2]; pol_angle[i,1], pol_angle[i,2] = rand_to_angle(ω[i],dt)
+        sync_threads()
+        pol[i,1], pol[i,2] ,pol[i,3]   = rotation(angle_to_pol((pol_angle[i,1], pol_angle[i,2])),θ_prev, φ_prev)
         sync_threads()
         pol_angle[i,1], pol_angle[i,2] = cart_to_angle((pol[i,1], pol[i,2] ,pol[i,3]))
 
