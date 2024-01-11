@@ -185,9 +185,7 @@ end
 Base.@kwdef mutable struct OutputModel
     name_output      :: String
     path_output      :: String
-    d_saved          :: Float64
-    N_data           :: Int64
-    N_lin            :: Float64
+    option_output    :: SavingType
 end 
 Base.@kwdef mutable struct ModelSet
     Time        :: TimeModel
@@ -620,7 +618,6 @@ Base.@kwdef mutable struct Aggregate
             [false] |> cu
         )
 
-        val_x  = repeat([max_min_agg(range_x,model.Output.d_saved)...], inner=2)
         simulation = AggSimulation(
             agg_limit,
             agg_parameter, 
