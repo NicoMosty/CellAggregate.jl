@@ -25,6 +25,7 @@ function dist_kernel!(idx,idx_sum,dist,points,r_max)
         idx_sum[i] = 0
         for m = 1:size(idx,1)
             idx[m,i] = 0
+            dist[m,i] = 0
         end
 
         # First loop. Register all possible pairwise interactions based on
