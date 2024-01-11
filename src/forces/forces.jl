@@ -41,34 +41,25 @@ function sum_force!(points,force,pol,pol_angle,N_i,idx_sum,idx,force_par,cont_pa
         sync_threads()
         pol_angle[i,1], pol_angle[i,2] = cart_to_angle((pol[i,1], pol[i,2] ,pol[i,3]))
 
-        # Iterate on each row
         for j=1:idx_sum[i]
-        # for j=1:1
+            
             if idx[j,i] != 0
 
                 # # Finding norm and distances
                 dist = euclidean(points,i,idx[j,i])
                 norm = (points[idx[j,i],k]-points[i,k])/dist
                 
-                # Calculating angle between polarization vector and  ...
+                # Calculating angle between polarization vector and  [Opc 1]
                 N_i[i] = 0
                 for m = 1:3
                     N_i[i] += (points[i,m]-points[idx[j,i],m])/dist * pol[i,m]
                 end
 
-
-                # if cos(ψₜ[i]) < N_i[i] < 0.99
-                if cos(ψₜ[i] - ψₘ[i]) > N_i[i] > cos(ψₜ[i] + ψₘ[i])
-                    # prot_force = cont_par[i]* norm
-                    prot_force = a*(dist-force_par.rₘₐₓ[i])^2*cont_par[i]*pol[i,k]
-                    # <-------------------------------------------------------------------------------- THIS
-                    # prot_force = cont_par[i]*( 
-                    #     (cos(ψₘ[i]) + sin(ψₘ[i])*N_i[i]/(sqrt(1-N_i[i]^2)))*pol[i,k]    
-                    #     - sin(ψₘ[i])/(sqrt(1-N_i[i]^2))*norm    
-                    #     )
-                    # <-------------------------------------------------------------------------------- THIS
-                    force[i,k]        -= prot_force
-                    force[idx[j,i],k] += prot_force
+                if cos(ψₜ[i] - ψₘ[i]) > N_i[i] > cos(ψₜ[i] + ψₘ[i]) 
+                    # prot_vec = pol[i,k]
+                    prot_vec = pol[i,k]
+                    force[i,k]        -= a*(dist-force_par.rₘₐₓ[i])^2*cont_par[i]*prot_vec
+                    force[idx[j,i],k] += a*(dist-force_par.rₘₐₓ[i])^2*cont_par[i]*prot_vec
                 end
 
                 # Calculating forces on each cell
@@ -87,82 +78,3 @@ function sum_force!(points,force,pol,pol_angle,N_i,idx_sum,idx,force_par,cont_pa
     return nothing
 
 end
-
-# OLD KERNEL FUNCTIONS
-        # # For break the kernel when the values are out of the grid
-        # if points[i,k] > max_grid || isnan(points[i,k])
-        #     break_sim[1,1] = true
-        # end
-
-
-        # <-------------------------------------------------------------------------------- THIS
-        # Adding Contractile Force (Me without Area)
-        
-        # # Adding Contractile Force (Oriola without Area)
-        # randomo[ti,tk] = rand(1:idx_sum[i])
-        # force[i,k] = randomo[ti]
-
-        # if randomo[ti] != i
-        #     dist = euclidean(points,idx[randomo[ti],i],i)
-        #     norm[ti,tk] = (points[i,k]-points[idx[randomo[ti],i],k])/dist
-        #     force[i,k] -= cont_par[i]*norm[ti,tk]
-        # end
-
-        # Adding Contractile Force (Oriola without Area)
-        # idx_cont[ti,tk] = rand_to_cont(i,idx,idx_sum)
-        # if idx_cont[ti]  != i && idx_cont[ti]  != 0
-        #     dist = euclidean(points,i,idx_cont[ti] )
-        #     force[i,k] -= cont_par[i]*(points[i,k]-points[idx_cont[ti] ,k])/dist
-        # end
-        # <-------------------------------------------------------------------------------- THIS
-
-# <------------------------------
-# function sum_force!(idx,idx_cont,idx_sum,points,force,force_par,cont_par,dt,t_knn,pol_mat)
-#     # pol_mat
-#     # Defining Index for kernel
-#     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
-#     k = (blockIdx().y - 1) * blockDim().y + threadIdx().y
-
-#     # Limiting data inside matrix
-#     if i <= size(points, 1) && k <= size(points, 2)
-
-#         # Cleaning force
-#         force[i,k] = 0
-
-#         # # Generating Polarization vector
-#         phi = 2*pi*(2*rand() - 1)
-
-#         pol_mat[i,3] = 2*rand() - 1
-#         pol_mat[i,1] = sqrt(1-pol_mat[i,3]^2)*cos(phi)
-#         pol_mat[i,2] = sqrt(1-pol_mat[i,3]^2)*sin(phi)
-
-#         # Iterate on each row
-#         # for j=1:size(idx,1)
-#         for j=1:idx_sum[i]
-#             # Finding forces
-#             if idx[j,i] != 0
-#                 dist = euclidean(points,idx[j,i],i)
-#                 # if dist < force_par.rₘₐₓ[i]
-#                 force[i,k] += force_func(force_par,i,dist) * (points[i,k]-points[idx[j,i],k])/dist
-#                 # end
-#                 # <------------------------------------------- THIS [Add Area Function]
-
-#                 # <-------------------------------------------
-#             end
-#         end
-
-#         # Adding Contractile Force (Me without Area)
-#         force[i,k] += cont_par[i]*pol_mat[i,k]
-
-#         # # Adding Contractile Force (Oriola without Area)
-#         # if idx_cont[t_knn,i] != i && idx_cont[t_knn,i] != 0
-#         #     dist = euclidean(points,i,idx_cont[t_knn,i])
-#         #     force[i,k] -= cont_par[i]*(points[i,k]-points[idx_cont[t_knn,i],k])/dist
-#         # end
-
-#         # Summing dX on the position of the aggregate on a specific dt
-#         points[i,k] = points[i,k] + force[i,k] * dt
-        
-#     end
-#     return nothing
-# end
