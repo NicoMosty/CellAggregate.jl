@@ -430,6 +430,7 @@ end
 
 max_min_agg(data,d_data) = ceil(data[1])-5:d_data:floor(data[2])+5
 
+mean_val(data) = sum(data, dims=1)/size(data,1)
 # <----------------------------------------------- REVIEW THIS
 ################################ OLD ####################################
 # # Step Fuctions
@@ -494,3 +495,37 @@ function cart_to_angle(q)
 end
 
 # Extract Functions
+move_to_center(data) = data - repeat(mean_val(data),size(data,1))
+function center_rotation_data(data,index)
+
+    # Moving to center
+    data = move_to_center(data)
+
+    # Separation
+    data_A = data[map(i->i[1], findall(index .== 1.0)), :]
+    data_B = data[map(i->i[1], findall(index .== 2.0)), :]
+
+    # Centering
+    mean_A = mean_val(data_A)
+    mean_B = mean_val(data_B)
+
+    # Vector of Center Mass
+    if mean_A[1] > 0.0
+        rot_vector =  (mean_A - mean_B)*0.5
+    else
+        rot_vector =  (mean_B - mean_A)*0.5
+    end
+
+    # Finding norms on the vector
+    norm    = sqrt(rot_vector[1]^2 + rot_vector[2]^2 + rot_vector[3]^2)
+    norm_xy = sqrt(rot_vector[1]^2 + rot_vector[2]^2)
+
+    mat_rot = [
+        rot_vector[1]/norm                          rot_vector[2]/norm                           rot_vector[3]/norm
+       -rot_vector[2]/norm_xy                       rot_vector[1]/norm_xy                        0
+       -rot_vector[1]*rot_vector[3]/(norm*norm_xy)  -rot_vector[2]*rot_vector[3]/(norm*norm_xy)  norm_xy/norm
+   ]
+
+    return mat_rot
+
+end
