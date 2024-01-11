@@ -3,6 +3,7 @@ module CellAggregate
     using CUDA, Adapt, Dates, DelimitedFiles, ProgressMeter, InteractiveUtils, Images, FileIO
 
     export Cubic, LennardJones, Oriola # <- Make a macro to export all the forces on "./forces/forces_func.jl"
+    export Fusion, Stabilization
 
     export create_dir
 
@@ -15,6 +16,7 @@ module CellAggregate
     
     export dist_kernel!, sum_force!, run_test, FusionAggregate
 
+    include("./functions/saving_structs.jl")
     include("./functions/general_function.jl")
     include("./forces/forces_func.jl")
     include("struct_data.jl")
@@ -22,6 +24,7 @@ module CellAggregate
     include("./forces/forces.jl")
     include("neighbor.jl")
     include("extract_info.jl")
+    include("./functions/saving_function.jl")
     include("run_event.jl")
 
     include("sphere.jl")
