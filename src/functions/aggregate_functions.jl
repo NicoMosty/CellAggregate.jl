@@ -64,8 +64,8 @@ function FusionAggregate(init_set, model, dist)
         fusion_agg = Aggregate(
             init_set,
             [
-                AggLocation(init_set[1].Name,[-radius_loc[1]+(dist-1) 0  0]),
-                AggLocation(init_set[1].Name,[ radius_loc[1]-(dist-1) 0  0])
+                AggLocation(init_set[1].Name,[-radius_loc[1]+dist 0  0]),
+                AggLocation(init_set[1].Name,[ radius_loc[1]-dist 0  0])
             ],
             model
         )
